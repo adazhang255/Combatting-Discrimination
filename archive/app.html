@@ -1,141 +1,584 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Equity Navigator</title>
-<style>
-*{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:sans-serif;background:#f0ece8;min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:24px 16px;}
-.frame{max-width:380px;width:100%;background:#1e2235;border-radius:40px;padding:10px;min-height:700px;}
-.screen-wrap{background:#fff;border-radius:32px;overflow:hidden;min-height:680px;display:flex;flex-direction:column;}
-.notch{width:70px;height:16px;background:#1e2235;border-radius:0 0 14px 14px;margin:0 auto 0;}
-.dark-hdr{background:#1e2235;padding:16px 18px 14px;color:#fff;display:flex;align-items:center;gap:10px;flex-shrink:0;}
-.dark-hdr .back{color:#c85a6a;font-size:20px;cursor:pointer;line-height:1;}
-.dark-hdr .title{font-family:Georgia,serif;font-size:16px;font-weight:400;}
-.body{flex:1;overflow-y:auto;display:flex;flex-direction:column;}
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Equity Navigator</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: sans-serif;
+        background: #f0ece8;
+        min-height: 100vh;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 24px 16px;
+      }
+      .frame {
+        max-width: 380px;
+        width: 100%;
+        background: #1e2235;
+        border-radius: 40px;
+        padding: 10px;
+        min-height: 700px;
+      }
+      .screen-wrap {
+        background: #fff;
+        border-radius: 32px;
+        overflow: hidden;
+        min-height: 680px;
+        display: flex;
+        flex-direction: column;
+      }
+      .notch {
+        width: 70px;
+        height: 16px;
+        background: #1e2235;
+        border-radius: 0 0 14px 14px;
+        margin: 0 auto 0;
+      }
+      .dark-hdr {
+        background: #1e2235;
+        padding: 16px 18px 14px;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0;
+      }
+      .dark-hdr .back {
+        color: #c85a6a;
+        font-size: 20px;
+        cursor: pointer;
+        line-height: 1;
+      }
+      .dark-hdr .title {
+        font-family: Georgia, serif;
+        font-size: 16px;
+        font-weight: 400;
+      }
+      .body {
+        flex: 1;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+      }
 
-.splash{background:#fdf0ee;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;}
-.logo-text{font-family:Georgia,serif;font-size:28px;font-weight:700;color:#1e2235;text-align:center;line-height:1.1;letter-spacing:0.01em;}
-.logo-text span{color:#c85a6a;}
-.logo-icon{display:flex;align-items:center;gap:8px;margin:24px 0;}
-.arc{width:32px;height:32px;border:3.5px solid #c85a6a;border-right-color:transparent;border-radius:50%;transform:rotate(-45deg);}
-.dot{width:12px;height:12px;background:#1e2235;border-radius:50%;}
-.tagline{font-size:14px;font-weight:600;color:#c85a6a;letter-spacing:0.06em;}
-.splash-btn{margin-top:32px;background:#1e2235;color:#fff;border:none;border-radius:28px;padding:14px 40px;font-size:15px;font-weight:600;cursor:pointer;font-family:sans-serif;}
+      .splash {
+        background: #fdf0ee;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 32px 24px;
+      }
+      .logo-text {
+        font-family: Georgia, serif;
+        font-size: 28px;
+        font-weight: 700;
+        color: #1e2235;
+        text-align: center;
+        line-height: 1.1;
+        letter-spacing: 0.01em;
+      }
+      .logo-text span {
+        color: #c85a6a;
+      }
+      .logo-icon {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 24px 0;
+      }
+      .arc {
+        width: 32px;
+        height: 32px;
+        border: 3.5px solid #c85a6a;
+        border-right-color: transparent;
+        border-radius: 50%;
+        transform: rotate(-45deg);
+      }
+      .dot {
+        width: 12px;
+        height: 12px;
+        background: #1e2235;
+        border-radius: 50%;
+      }
+      .tagline {
+        font-size: 14px;
+        font-weight: 600;
+        color: #c85a6a;
+        letter-spacing: 0.06em;
+      }
+      .splash-btn {
+        margin-top: 32px;
+        background: #1e2235;
+        color: #fff;
+        border: none;
+        border-radius: 28px;
+        padding: 14px 40px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: sans-serif;
+      }
 
-.home-inner{padding:20px 18px;flex:1;display:flex;flex-direction:column;}
-.home-logo{font-family:Georgia,serif;font-size:24px;font-weight:700;color:#1e2235;text-align:center;line-height:1.1;margin-bottom:22px;}
-.home-logo span{color:#c85a6a;}
-.main-btn{background:#1e2235;color:#fff;border:none;border-radius:28px;padding:15px 18px;font-size:14px;font-weight:600;width:100%;margin-bottom:14px;cursor:pointer;font-family:sans-serif;text-align:center;}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-.grid-btn{background:#fff;border:1.5px solid #1e2235;border-radius:16px;padding:18px 10px;font-size:13px;font-weight:600;text-align:center;cursor:pointer;color:#1e2235;font-family:sans-serif;line-height:1.3;}
-.grid-btn:hover{background:#f5f0ee;}
+      .home-inner {
+        padding: 20px 18px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+      }
+      .home-logo {
+        font-family: Georgia, serif;
+        font-size: 24px;
+        font-weight: 700;
+        color: #1e2235;
+        text-align: center;
+        line-height: 1.1;
+        margin-bottom: 22px;
+      }
+      .home-logo span {
+        color: #c85a6a;
+      }
+      .main-btn {
+        background: #1e2235;
+        color: #fff;
+        border: none;
+        border-radius: 28px;
+        padding: 15px 18px;
+        font-size: 14px;
+        font-weight: 600;
+        width: 100%;
+        margin-bottom: 14px;
+        cursor: pointer;
+        font-family: sans-serif;
+        text-align: center;
+      }
+      .grid2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      .grid-btn {
+        background: #fff;
+        border: 1.5px solid #1e2235;
+        border-radius: 16px;
+        padding: 18px 10px;
+        font-size: 13px;
+        font-weight: 600;
+        text-align: center;
+        cursor: pointer;
+        color: #1e2235;
+        font-family: sans-serif;
+        line-height: 1.3;
+      }
+      .grid-btn:hover {
+        background: #f5f0ee;
+      }
 
-.forum-list{flex:1;padding:12px 14px;}
-.f-item{border:1.5px solid #7c5cbf;border-radius:10px;padding:11px 13px;margin-bottom:10px;cursor:pointer;}
-.f-item:hover{background:#faf8ff;}
-.f-title{font-size:13px;font-weight:700;color:#1e2235;margin-bottom:7px;line-height:1.3;}
-.f-meta{display:flex;align-items:center;gap:7px;}
-.av{width:24px;height:24px;border-radius:50%;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.f-user{font-size:11px;color:#666;}
-.f-stats{font-size:11px;color:#999;margin-left:auto;}
+      .forum-list {
+        flex: 1;
+        padding: 12px 14px;
+      }
+      .f-item {
+        border: 1.5px solid #7c5cbf;
+        border-radius: 10px;
+        padding: 11px 13px;
+        margin-bottom: 10px;
+        cursor: pointer;
+      }
+      .f-item:hover {
+        background: #faf8ff;
+      }
+      .f-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: #1e2235;
+        margin-bottom: 7px;
+        line-height: 1.3;
+      }
+      .f-meta {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+      }
+      .av {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        font-size: 10px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .f-user {
+        font-size: 11px;
+        color: #666;
+      }
+      .f-stats {
+        font-size: 11px;
+        color: #999;
+        margin-left: auto;
+      }
 
-.report-inner{padding:16px 16px;}
-.rlabel{font-size:11px;font-weight:700;color:#555;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.04em;}
-.radio-row{display:flex;gap:18px;margin-bottom:12px;}
-.radio-row label{font-size:12px;color:#333;display:flex;align-items:center;gap:5px;cursor:pointer;}
-.fake-sel{border:1px solid #ccc;border-radius:8px;padding:8px 12px;font-size:12px;color:#aaa;background:#fff;margin-bottom:12px;width:100%;display:flex;justify-content:space-between;}
-.step-footer{display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding-top:12px;border-top:0.5px solid #eee;}
-.step-lbl{font-size:11px;color:#999;}
-.btn-grp{display:flex;gap:8px;}
-.btn-back{background:transparent;border:none;font-size:12px;color:#888;cursor:pointer;padding:6px 10px;}
-.btn-next{background:#5a7a42;color:#fff;border:none;border-radius:8px;padding:8px 20px;font-size:13px;font-weight:600;cursor:pointer;}
-.success-box{background:#eaf4e3;border:1px solid #5a7a42;border-radius:10px;padding:16px;text-align:center;margin-top:16px;}
-.success-box p{font-size:13px;color:#2e5217;line-height:1.5;}
+      .report-inner {
+        padding: 16px 16px;
+      }
+      .rlabel {
+        font-size: 11px;
+        font-weight: 700;
+        color: #555;
+        margin-bottom: 5px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      .radio-row {
+        display: flex;
+        gap: 18px;
+        margin-bottom: 12px;
+      }
+      .radio-row label {
+        font-size: 12px;
+        color: #333;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        cursor: pointer;
+      }
+      .fake-sel {
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 12px;
+        color: #aaa;
+        background: #fff;
+        margin-bottom: 12px;
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+      }
+      .step-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 16px;
+        padding-top: 12px;
+        border-top: 0.5px solid #eee;
+      }
+      .step-lbl {
+        font-size: 11px;
+        color: #999;
+      }
+      .btn-grp {
+        display: flex;
+        gap: 8px;
+      }
+      .btn-back {
+        background: transparent;
+        border: none;
+        font-size: 12px;
+        color: #888;
+        cursor: pointer;
+        padding: 6px 10px;
+      }
+      .btn-next {
+        background: #5a7a42;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 8px 20px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .success-box {
+        background: #eaf4e3;
+        border: 1px solid #5a7a42;
+        border-radius: 10px;
+        padding: 16px;
+        text-align: center;
+        margin-top: 16px;
+      }
+      .success-box p {
+        font-size: 13px;
+        color: #2e5217;
+        line-height: 1.5;
+      }
 
-.chat-messages{flex:1;padding:14px 14px 6px;display:flex;flex-direction:column;gap:10px;overflow-y:auto;}
-.bubble{max-width:78%;padding:10px 13px;font-size:13px;line-height:1.45;border-radius:18px;}
-.bubble-user{background:#e8e4f0;color:#1e2235;align-self:flex-end;border-radius:18px 18px 4px 18px;}
-.bubble-bot{background:#fff;border:1px solid #e0e0e0;color:#1e2235;align-self:flex-start;border-radius:18px 18px 18px 4px;}
-.chat-input-row{display:flex;align-items:center;gap:8px;padding:10px 14px 14px;border-top:0.5px solid #eee;}
-.chat-tf{flex:1;background:#f0ece8;border:none;border-radius:22px;padding:9px 14px;font-size:13px;color:#333;font-family:sans-serif;outline:none;}
-.send-btn{width:34px;height:34px;background:#c8a96e;border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.send-arrow{border-left:8px solid #fff;border-top:5px solid transparent;border-bottom:5px solid transparent;margin-left:2px;}
+      .chat-messages {
+        flex: 1;
+        padding: 14px 14px 6px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        overflow-y: auto;
+      }
+      .bubble {
+        max-width: 78%;
+        padding: 10px 13px;
+        font-size: 13px;
+        line-height: 1.45;
+        border-radius: 18px;
+      }
+      .bubble-user {
+        background: #e8e4f0;
+        color: #1e2235;
+        align-self: flex-end;
+        border-radius: 18px 18px 4px 18px;
+      }
+      .bubble-bot {
+        max-width: 85%;
+        padding: 12px 16px;
+        border-radius: 18px;
+        margin-bottom: 10px;
+        line-height: 1.5;
+        word-wrap: break-word; /* Prevents long words from breaking layout */
+        height: auto; /* Allows expansion */
+        display: inline-block; /* Fits width to content up to max-width */
+      }
+      .chat-input-row {
+        display: flex;
+        align-items: flex-end; /* Keeps send button at the bottom as box grows */
+        padding: 12px;
+        background: #fff;
+        border-top: 1px solid #eee;
+        gap: 8px;
+      }
+      /* The actual text box */
+      .chat-tf {
+        flex: 1;
+        border: 1px solid #ddd;
+        border-radius: 12px;
+        padding: 10px 15px;
+        outline: none;
+        font-family: inherit;
+        font-size: 14px;
+        resize: none;          /* Hides the manual resize corner handle */
+        max-height: 120px;     /* Prevents the box from getting too huge */
+        min-height: 40px;      /* Starting height */
+        overflow-y: auto;      /* Adds scrollbar if text exceeds max-height */
+        line-height: 1.4;
+        transition: height 0.1s ease;
+      }
+      .send-btn {
+        width: 34px;
+        height: 34px;
+        background: #c8a96e;
+        border: none;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .send-arrow {
+        border-left: 8px solid #fff;
+        border-top: 5px solid transparent;
+        border-bottom: 5px solid transparent;
+        margin-left: 2px;
+      }
 
-.support-inner{padding:14px 16px;flex:1;}
-.supp-search{border:1px solid #ddd;border-radius:10px;padding:9px 12px;font-size:13px;color:#aaa;background:#fafafa;width:100%;margin-bottom:14px;font-family:sans-serif;}
-.supp-cat{font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;margin-top:10px;}
-.supp-link{font-size:13px;color:#1e2235;padding:9px 0;border-bottom:0.5px solid #f0f0f0;display:flex;justify-content:space-between;align-items:center;cursor:pointer;}
-.supp-link:hover{color:#c85a6a;}
-.chev{font-size:14px;color:#bbb;}
+      .support-inner {
+        padding: 14px 16px;
+        flex: 1;
+      }
+      .supp-search {
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        padding: 9px 12px;
+        font-size: 13px;
+        color: #aaa;
+        background: #fafafa;
+        width: 100%;
+        margin-bottom: 14px;
+        font-family: sans-serif;
+      }
+      .supp-cat {
+        font-size: 11px;
+        font-weight: 700;
+        color: #666;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 6px;
+        margin-top: 10px;
+      }
+      .supp-link {
+        font-size: 13px;
+        color: #1e2235;
+        padding: 9px 0;
+        border-bottom: 0.5px solid #f0f0f0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+      }
+      .supp-link:hover {
+        color: #c85a6a;
+      }
+      .chev {
+        font-size: 14px;
+        color: #bbb;
+      }
 
-.bottom-nav{display:flex;border-top:0.5px solid #eee;background:#fff;flex-shrink:0;}
-.nav-item{flex:1;padding:10px 4px 12px;text-align:center;cursor:pointer;font-size:10px;color:#aaa;border:none;background:transparent;font-family:sans-serif;}
-.nav-item.on{color:#1e2235;font-weight:700;}
-.nav-icon{font-size:18px;display:block;margin-bottom:2px;}
-</style>
-</head>
-<body>
-<div class="frame">
-  <div class="screen-wrap" id="app">
-    <div class="notch"></div>
-    <div class="body" id="body-area"></div>
-  </div>
-</div>
+      .bottom-nav {
+        display: flex;
+        border-top: 0.5px solid #eee;
+        background: #fff;
+        flex-shrink: 0;
+      }
+      .nav-item {
+        flex: 1;
+        padding: 10px 4px 12px;
+        text-align: center;
+        cursor: pointer;
+        font-size: 10px;
+        color: #aaa;
+        border: none;
+        background: transparent;
+        font-family: sans-serif;
+      }
+      .nav-item.on {
+        color: #1e2235;
+        font-weight: 700;
+      }
+      .nav-icon {
+        font-size: 18px;
+        display: block;
+        margin-bottom: 2px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="frame">
+      <div class="screen-wrap" id="app">
+        <div class="notch"></div>
+        <div class="body" id="body-area"></div>
+      </div>
+    </div>
 
-<script>
-const NAV=[
-  {id:'home',icon:'&#8962;',label:'Home'},
-  {id:'report',icon:'&#9998;',label:'Report'},
-  {id:'chat-what',icon:'&#63;',label:'Guidance'},
-  {id:'forums',icon:'&#9993;',label:'Forums'},
-  {id:'support',icon:'&#9829;',label:'Support'}
-];
+    <script>
+      const NAV = [
+        { id: "home", icon: "&#8962;", label: "Home" },
+        { id: "report", icon: "&#9998;", label: "Report" },
+        { id: "chat-what", icon: "&#63;", label: "Guidance" },
+        { id: "forums", icon: "&#9993;", label: "Forums" },
+        { id: "support", icon: "&#9829;", label: "Support" },
+      ];
 
-const FORUM_POSTS=[
-  {initials:'MR',bg:'#d4c5f0',tc:'#3c2580',title:'Reporting a hate crime? Advice needed.',user:'Mike R.',time:'2h ago',comments:45,likes:102},
-  {initials:'JT',bg:'#fde8c8',tc:'#854F0B',title:'Subtle forms of microaggressions in academic settings',user:'Jasmine T.',time:'2h ago',comments:31,likes:78},
-  {initials:'DL',bg:'#c8e0f0',tc:'#185FA5',title:'Finding support: dealing with the psychological impact',user:'David L.',time:'2h ago',comments:22,likes:65},
-  {initials:'EV',bg:'#f0e8c8',tc:'#633806',title:'Historical perspective: the root of systemic racism',user:'Dr. Elara V.',time:'2h ago',comments:15,likes:40}
-];
+      const FORUM_POSTS = [
+        {
+          initials: "MR",
+          bg: "#d4c5f0",
+          tc: "#3c2580",
+          title: "Reporting a hate crime? Advice needed.",
+          user: "Mike R.",
+          time: "2h ago",
+          comments: 45,
+          likes: 102,
+        },
+        {
+          initials: "JT",
+          bg: "#fde8c8",
+          tc: "#854F0B",
+          title: "Subtle forms of microaggressions in academic settings",
+          user: "Jasmine T.",
+          time: "2h ago",
+          comments: 31,
+          likes: 78,
+        },
+        {
+          initials: "DL",
+          bg: "#c8e0f0",
+          tc: "#185FA5",
+          title: "Finding support: dealing with the psychological impact",
+          user: "David L.",
+          time: "2h ago",
+          comments: 22,
+          likes: 65,
+        },
+        {
+          initials: "EV",
+          bg: "#f0e8c8",
+          tc: "#633806",
+          title: "Historical perspective: the root of systemic racism",
+          user: "Dr. Elara V.",
+          time: "2h ago",
+          comments: 15,
+          likes: 40,
+        },
+      ];
 
-const REPORT_STEPS=[
-  {q:'Is this crime occurring right now?',type:'radio',opts:['Yes','No — choose date & time']},
-  {q:'What state was this in?',type:'select',placeholder:'Select a state'},
-  {q:'What city?',type:'select',placeholder:'Select a city'},
-  {q:'Do you have an exact address or nearest cross streets?',type:'radio',opts:['Yes','No']},
-  {q:'Describe what happened (optional — your report is confidential)',type:'textarea'}
-];
+      const REPORT_STEPS = [
+        {
+          q: "Is this crime occurring right now?",
+          type: "radio",
+          opts: ["Yes", "No — choose date & time"],
+        },
+        {
+          q: "What state was this in?",
+          type: "select",
+          placeholder: "Select a state",
+        },
+        { q: "What city?", type: "select", placeholder: "Select a city" },
+        {
+          q: "Do you have an exact address or nearest cross streets?",
+          type: "radio",
+          opts: ["Yes", "No"],
+        },
+        {
+          q: "Describe what happened (optional — your report is confidential)",
+          type: "textarea",
+        },
+      ];
 
-const WHAT_PROMPTS=[
-  {bot:'That pattern can indicate retaliation, which is protected conduct under most anti-discrimination laws. I\'d suggest: (1) Document the date, meeting name, and who attended. (2) Send a follow-up email asking to be included in future meetings — this creates a paper trail. (3) If it continues, you can raise it with HR under your company\'s anti-retaliation policy.'},
-  {bot:'Repeated comments about your accent may constitute national-origin harassment. You have options: (1) If comfortable, calmly tell the colleague the comments are unwelcome. (2) Document each incident with dates and exact words. (3) Report to HR — you don\'t have to confront them directly. You\'re protected from retaliation for making a good-faith complaint.'},
-  {bot:'This could be discriminatory if protected characteristics played a role. Key steps: (1) Request written feedback on why you weren\'t selected. (2) Compare your qualifications to whoever was promoted. (3) Check if there\'s a pattern — were others in your group also passed over? Document everything and consider consulting your HR policy or an employment attorney.'}
-];
+      const WHAT_PROMPTS = [
+        {
+          bot: "That pattern can indicate retaliation, which is protected conduct under most anti-discrimination laws. I'd suggest: (1) Document the date, meeting name, and who attended. (2) Send a follow-up email asking to be included in future meetings — this creates a paper trail. (3) If it continues, you can raise it with HR under your company's anti-retaliation policy.",
+        },
+        {
+          bot: "Repeated comments about your accent may constitute national-origin harassment. You have options: (1) If comfortable, calmly tell the colleague the comments are unwelcome. (2) Document each incident with dates and exact words. (3) Report to HR — you don't have to confront them directly. You're protected from retaliation for making a good-faith complaint.",
+        },
+        {
+          bot: "This could be discriminatory if protected characteristics played a role. Key steps: (1) Request written feedback on why you weren't selected. (2) Compare your qualifications to whoever was promoted. (3) Check if there's a pattern — were others in your group also passed over? Document everything and consider consulting your HR policy or an employment attorney.",
+        },
+      ];
 
-const IDENTIFY_PROMPTS=[
-  {bot:'It\'s hard to know without more details, but here are the key questions: Was the treatment less favorable than others in similar situations? Was a protected characteristic (race, gender, age, disability, religion, etc.) a likely factor? Was it a pattern or isolated? Even if uncertain, you have the right to report it. Would you like help identifying which category it might fall under?'},
-  {bot:'What you\'re describing could be racial discrimination in a performance evaluation. This is one of the most documented forms of workplace bias. Key indicators: similar work quality, different outcomes, and racial pattern. I\'d recommend: (1) Request a copy of your review in writing. (2) Note colleagues whose work was comparable and their ratings. (3) File a report with HR or the EEOC.'}
-];
+      const IDENTIFY_PROMPTS = [
+        {
+          bot: "It's hard to know without more details, but here are the key questions: Was the treatment less favorable than others in similar situations? Was a protected characteristic (race, gender, age, disability, religion, etc.) a likely factor? Was it a pattern or isolated? Even if uncertain, you have the right to report it. Would you like help identifying which category it might fall under?",
+        },
+        {
+          bot: "What you're describing could be racial discrimination in a performance evaluation. This is one of the most documented forms of workplace bias. Key indicators: similar work quality, different outcomes, and racial pattern. I'd recommend: (1) Request a copy of your review in writing. (2) Note colleagues whose work was comparable and their ratings. (3) File a report with HR or the EEOC.",
+        },
+      ];
 
-let currentScreen='splash';
-let reportStep=0;
-let chatWhatIndex=0;
-let chatIdentifyIndex=0;
-let chatWhatMessages=[];
-let chatIdentifyMessages=[];
+      let currentScreen = "splash";
+      let reportStep = 0;
+      let chatWhatIndex = 0;
+      let chatIdentifyIndex = 0;
+      let chatWhatMessages = [];
+      let chatIdentifyMessages = [];
 
-function render(){
-  const bodyEl=document.getElementById('body-area');
-  const app=document.getElementById('app');
-  // Remove old bottom nav
-  const oldNav=app.querySelector('.bottom-nav');
-  if(oldNav) oldNav.remove();
-  bodyEl.innerHTML='';
+      function render() {
+        const bodyEl = document.getElementById("body-area");
+        const app = document.getElementById("app");
+        // Remove old bottom nav
+        const oldNav = app.querySelector(".bottom-nav");
+        if (oldNav) oldNav.remove();
+        bodyEl.innerHTML = "";
 
-  if(currentScreen==='splash'){
-    bodyEl.innerHTML=`
+        if (currentScreen === "splash") {
+          bodyEl.innerHTML = `
       <div class="splash">
         <div class="logo-text">E<span>Q</span>UITY<br>NAVIGATOR</div>
         <div class="logo-icon">
@@ -145,13 +588,13 @@ function render(){
         <div class="tagline">Support. Guidance. Action.</div>
         <button class="splash-btn" onclick="go('home')">Get started</button>
       </div>`;
-    return;
-  }
+          return;
+        }
 
-  let html='';
+        let html = "";
 
-  if(currentScreen==='home'){
-    html=`<div class="home-inner">
+        if (currentScreen === "home") {
+          html = `<div class="home-inner">
       <div class="home-logo">E<span>Q</span>UITY<br>NAVIGATOR</div>
       <button class="main-btn" onclick="go('report')">Anonymously document an incident</button>
       <div class="grid2">
@@ -161,81 +604,81 @@ function render(){
         <div class="grid-btn" onclick="go('forums')">Forums</div>
       </div>
     </div>`;
-  }
-
-  else if(currentScreen==='forums'){
-    html=`<div class="dark-hdr"><span class="back" onclick="go('home')">&#8249;</span><span class="title">Forums</span></div>
+        } else if (currentScreen === "forums") {
+          html = `<div class="dark-hdr"><span class="back" onclick="go('home')">&#8249;</span><span class="title">Forums</span></div>
     <div class="forum-list">
-      ${FORUM_POSTS.map(p=>`<div class="f-item">
+      ${FORUM_POSTS.map(
+        (p) => `<div class="f-item">
         <div class="f-title">${p.title}</div>
         <div class="f-meta">
           <div class="av" style="background:${p.bg};color:${p.tc};">${p.initials}</div>
           <span class="f-user">${p.user} &middot; ${p.time}</span>
           <span class="f-stats">&#9997; ${p.comments} &nbsp; &#9829; ${p.likes}</span>
         </div>
-      </div>`).join('')}
+      </div>`,
+      ).join("")}
     </div>`;
-  }
-
-  else if(currentScreen==='report'){
-    const step=REPORT_STEPS[reportStep];
-    let fieldHtml='';
-    if(step.type==='radio'){
-      fieldHtml=`<div class="radio-row">${step.opts.map((o,i)=>`<label><input type="radio" name="ropt" ${i===0?'checked':''}> ${o}</label>`).join('')}</div>`;
-    } else if(step.type==='select'){
-      fieldHtml=`<div class="fake-sel"><span>${step.placeholder}</span><span>&#9660;</span></div>`;
-    } else if(step.type==='textarea'){
-      fieldHtml=`<textarea style="width:100%;border:1px solid #ccc;border-radius:8px;padding:9px 12px;font-size:12px;font-family:sans-serif;resize:none;height:80px;color:#333;" placeholder="Describe what happened..."></textarea>`;
-    }
-    const isDone=reportStep===REPORT_STEPS.length-1;
-    html=`<div class="dark-hdr"><span class="back" onclick="go('home')">&#8249;</span><span class="title">Report an incident</span></div>
+        } else if (currentScreen === "report") {
+          const step = REPORT_STEPS[reportStep];
+          let fieldHtml = "";
+          if (step.type === "radio") {
+            fieldHtml = `<div class="radio-row">${step.opts.map((o, i) => `<label><input type="radio" name="ropt" ${i === 0 ? "checked" : ""}> ${o}</label>`).join("")}</div>`;
+          } else if (step.type === "select") {
+            fieldHtml = `<div class="fake-sel"><span>${step.placeholder}</span><span>&#9660;</span></div>`;
+          } else if (step.type === "textarea") {
+            fieldHtml = `<textarea style="width:100%;border:1px solid #ccc;border-radius:8px;padding:9px 12px;font-size:12px;font-family:sans-serif;resize:none;height:80px;color:#333;" placeholder="Describe what happened..."></textarea>`;
+          }
+          const isDone = reportStep === REPORT_STEPS.length - 1;
+          html = `<div class="dark-hdr"><span class="back" onclick="go('home')">&#8249;</span><span class="title">Report an incident</span></div>
     <div class="report-inner">
       <div style="font-size:14px;font-weight:700;color:#1e2235;margin-bottom:14px;">New tip</div>
       <div class="rlabel">${step.q}</div>
       ${fieldHtml}
       <div class="step-footer">
-        <span class="step-lbl">Step ${reportStep+1} of ${REPORT_STEPS.length}</span>
+        <span class="step-lbl">Step ${reportStep + 1} of ${REPORT_STEPS.length}</span>
         <div class="btn-grp">
-          ${reportStep>0?`<button class="btn-back" onclick="reportStep--;render()">Back</button>`:''}
-          <button class="btn-next" id="btn-submit" onclick="${isDone?'submitReport()':'reportStep++;render()'}">${isDone?'Submit':'Next'}</button>
+          ${reportStep > 0 ? `<button class="btn-back" onclick="reportStep--;render()">Back</button>` : ""}
+          <button class="btn-next" id="btn-submit" onclick="${isDone ? "submitReport()" : "reportStep++;render()"}">${isDone ? "Submit" : "Next"}</button>
         </div>
       </div>
       <div id="report-success"></div>
     </div>`;
-  }
-
-  else if(currentScreen==='chat-what'){
-    html=`<div class="dark-hdr"><span class="back" onclick="go('home')">&#8249;</span><span class="title">What should I do?</span></div>
+        } else if (currentScreen === "chat-what") {
+          html = `<div class="dark-hdr"><span class="back" onclick="go('home')">&#8249;</span><span class="title">What should I do?</span></div>
     <div class="chat-messages" id="chat-msgs-what">
-      ${chatWhatMessages.length===0?`<div class="bubble bubble-bot">Describe your situation and I'll guide you through your options and next steps.</div>`:''}
-      ${chatWhatMessages.map(m=>`
+      ${chatWhatMessages.length === 0 ? `<div class="bubble bubble-bot">Describe your situation and I'll guide you through your options and next steps.</div>` : ""}
+      ${chatWhatMessages
+        .map(
+          (m) => `
         <div class="bubble bubble-user">${m.user}</div>
         <div class="bubble bubble-bot">${m.bot}</div>
-      `).join('')}
+      `,
+        )
+        .join("")}
     </div>
     <div class="chat-input-row">
       <input class="chat-tf" id="tf-what" placeholder="Describe your situation..." onkeydown="if(event.key==='Enter')sendChat('what')">
       <div class="send-btn" onclick="sendChat('what')"><div class="send-arrow"></div></div>
     </div>`;
-  }
-
-  else if(currentScreen==='chat-identify'){
-    html=`<div class="dark-hdr"><span class="back" onclick="go('home')">&#8249;</span><span class="title">Identify discrimination</span></div>
+        } else if (currentScreen === "chat-identify") {
+          html = `<div class="dark-hdr"><span class="back" onclick="go('home')">&#8249;</span><span class="title">Identify discrimination</span></div>
     <div class="chat-messages" id="chat-msgs-identify">
-      ${chatIdentifyMessages.length===0?`<div class="bubble bubble-bot">Tell me what happened and I'll help you understand if it may be discrimination and what category it falls under.</div>`:''}
-      ${chatIdentifyMessages.map(m=>`
+      ${chatIdentifyMessages.length === 0 ? `<div class="bubble bubble-bot">Tell me what happened and I'll help you understand if it may be discrimination and what category it falls under.</div>` : ""}
+      ${chatIdentifyMessages
+        .map(
+          (m) => `
         <div class="bubble bubble-user">${m.user}</div>
         <div class="bubble bubble-bot">${m.bot}</div>
-      `).join('')}
+      `,
+        )
+        .join("")}
     </div>
     <div class="chat-input-row">
       <input class="chat-tf" id="tf-identify" placeholder="What happened?" onkeydown="if(event.key==='Enter')sendChat('identify')">
       <div class="send-btn" onclick="sendChat('identify')"><div class="send-arrow"></div></div>
     </div>`;
-  }
-
-  else if(currentScreen==='support'){
-    html=`<div class="dark-hdr"><span class="back" onclick="go('home')">&#8249;</span><span class="title">Get support</span></div>
+        } else if (currentScreen === "support") {
+          html = `<div class="dark-hdr"><span class="back" onclick="go('home')">&#8249;</span><span class="title">Get support</span></div>
     <div class="support-inner">
       <input class="supp-search" placeholder="Search help articles..." readonly>
       <div class="supp-cat">Essentials</div>
@@ -252,54 +695,63 @@ function render(){
       <div class="supp-link">Retaliation protections <span class="chev">&#8250;</span></div>
       <div class="supp-link">Mental health resources <span class="chev">&#8250;</span></div>
     </div>`;
-  }
+        }
 
-  bodyEl.innerHTML=html;
+        bodyEl.innerHTML = html;
 
-  const nav=document.createElement('div');
-  nav.className='bottom-nav';
-  NAV.forEach(n=>{
-    const btn=document.createElement('button');
-    btn.className='nav-item'+(currentScreen===n.id?' on':'');
-    btn.innerHTML=`<span class="nav-icon">${n.icon}</span>${n.label}`;
-    btn.onclick=()=>go(n.id);
-    nav.appendChild(btn);
-  });
-  app.appendChild(nav);
-}
+        const nav = document.createElement("div");
+        nav.className = "bottom-nav";
+        NAV.forEach((n) => {
+          const btn = document.createElement("button");
+          btn.className = "nav-item" + (currentScreen === n.id ? " on" : "");
+          btn.innerHTML = `<span class="nav-icon">${n.icon}</span>${n.label}`;
+          btn.onclick = () => go(n.id);
+          nav.appendChild(btn);
+        });
+        app.appendChild(nav);
+      }
 
-function go(screen){
-  if(screen==='report') reportStep=0;
-  currentScreen=screen;
-  render();
-}
+      function go(screen) {
+        if (screen === "report") reportStep = 0;
+        currentScreen = screen;
+        render();
+      }
 
-function submitReport(){
-  const el=document.getElementById('report-success');
-  if(el) el.innerHTML=`<div class="success-box"><p>&#10003; Your report has been submitted anonymously. A case number will be sent to your secure inbox. Thank you for speaking up.</p></div>`;
-  const btn=document.getElementById('btn-submit');
-  if(btn){btn.disabled=true;btn.style.opacity='0.5';}
-}
+      function submitReport() {
+        const el = document.getElementById("report-success");
+        if (el)
+          el.innerHTML = `<div class="success-box"><p>&#10003; Your report has been submitted anonymously. A case number will be sent to your secure inbox. Thank you for speaking up.</p></div>`;
+        const btn = document.getElementById("btn-submit");
+        if (btn) {
+          btn.disabled = true;
+          btn.style.opacity = "0.5";
+        }
+      }
 
-function sendChat(which){
-  const tf=document.getElementById('tf-'+which);
-  if(!tf) return;
-  const val=tf.value.trim();
-  if(!val) return;
-  const pool=which==='what'?WHAT_PROMPTS:IDENTIFY_PROMPTS;
-  const idx=which==='what'?chatWhatIndex:chatIdentifyIndex;
-  const reply=pool[idx%pool.length];
-  if(which==='what'){chatWhatMessages.push({user:val,bot:reply.bot});chatWhatIndex++;}
-  else{chatIdentifyMessages.push({user:val,bot:reply.bot});chatIdentifyIndex++;}
-  tf.value='';
-  render();
-  setTimeout(()=>{
-    const msgs=document.getElementById('chat-msgs-'+which);
-    if(msgs) msgs.scrollTop=msgs.scrollHeight;
-  },50);
-}
+      function sendChat(which) {
+        const tf = document.getElementById("tf-" + which);
+        if (!tf) return;
+        const val = tf.value.trim();
+        if (!val) return;
+        const pool = which === "what" ? WHAT_PROMPTS : IDENTIFY_PROMPTS;
+        const idx = which === "what" ? chatWhatIndex : chatIdentifyIndex;
+        const reply = pool[idx % pool.length];
+        if (which === "what") {
+          chatWhatMessages.push({ user: val, bot: reply.bot });
+          chatWhatIndex++;
+        } else {
+          chatIdentifyMessages.push({ user: val, bot: reply.bot });
+          chatIdentifyIndex++;
+        }
+        tf.value = "";
+        render();
+        setTimeout(() => {
+          const msgs = document.getElementById("chat-msgs-" + which);
+          if (msgs) msgs.scrollTop = msgs.scrollHeight;
+        }, 50);
+      }
 
-render();
-</script>
-</body>
+      render();
+    </script>
+  </body>
 </html>
