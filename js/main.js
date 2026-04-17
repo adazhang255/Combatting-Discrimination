@@ -5,6 +5,17 @@ let chatWhatIndex = 0;
 let chatIdentifyIndex = 0;
 let chatWhatMessages = [];
 let chatIdentifyMessages = [];
+let forumPostId = null;
+let usingAI = false;
+let modelReady = false;
+let pipeline = null;
+
+// Configuration - Transformers.js for browser-side LLM
+// Using Xenova's quantized Gemma model (runs client-side, no API key needed!)
+const MODEL_ID = 'Xenova/gemma-1.1-2b-it';  // 2B quantized - works in browser
+// Alternative lighter models:
+// 'Xenova/Phi-2' - faster, smaller
+// 'Xenova/DistilBERT-base-uncased' - minimal, for testing
 
 /**
  * Main render function - updates DOM based on current screen state
@@ -30,6 +41,8 @@ function render() {
     html = renderHome();
   } else if (currentScreen === 'forums') {
     html = renderForums();
+  } else if (currentScreen === 'forum-detail') {
+    html = renderForumDetail();
   } else if (currentScreen === 'report') {
     html = renderReport();
   } else if (currentScreen === 'chat-what') {
@@ -65,9 +78,14 @@ function renderSplash(container) {
  * Render home screen
  */
 function renderHome() {
+  const statusHtml = modelReady 
+    ? '<div class="ai-status">🤖 AI Ready (Browser)</div>'
+    : '<div class="ai-loading">⏳ Loading AI Model... (First time only, ~200MB)</div>';
+  
   return `<div class="home-inner">
     <div class="home-logo">E<span>Q</span>UITY<br>NAVIGATOR</div>
     <button class="main-btn" onclick="go('report')">Anonymously document an incident</button>
+    ${statusHtml}
     <div class="grid2">
       <div class="grid-btn" onclick="go('chat-what')">What should I do?</div>
       <div class="grid-btn" onclick="go('chat-identify')">Identify an experience</div>
@@ -82,7 +100,7 @@ function renderHome() {
  */
 function renderForums() {
   const postsHtml = FORUM_POSTS.map(post => `
-    <div class="f-item">
+    <div class="f-item" onclick="openForumPost(${post.id})">
       <div class="f-title">${post.title}</div>
       <div class="f-meta">
         <div class="av" style="background:${post.bg};color:${post.tc};">${post.initials}</div>
@@ -97,13 +115,54 @@ function renderForums() {
 }
 
 /**
+ * Render forum post detail screen
+ */
+function renderForumDetail() {
+  const post = FORUM_POSTS.find(p => p.id === forumPostId);
+  if (!post) return renderForums();
+
+  const repliesHtml = post.replies.map(reply => `
+    <div class="reply">
+      <div class="reply-header">
+        <div class="av" style="background:${post.bg};color:${post.tc};">${reply.initials}</div>
+        <div class="reply-info">
+          <div class="reply-user">${reply.user}</div>
+          <div class="reply-time">${reply.time}</div>
+        </div>
+      </div>
+      <div class="reply-text">${reply.text}</div>
+    </div>`).join('');
+
+  return `
+    <div class="dark-hdr"><span class="back" onclick="go('forums')">&#8249;</span><span class="title">Discussion</span></div>
+    <div class="forum-detail">
+      <div class="post-header">
+        <div class="av" style="background:${post.bg};color:${post.tc};">${post.initials}</div>
+        <div class="post-info">
+          <div class="post-user">${post.user}</div>
+          <div class="post-time">${post.time}</div>
+        </div>
+      </div>
+      <div class="post-title">${post.title}</div>
+      <div class="post-body">${post.body}</div>
+      <div class="post-stats">${post.comments} comments &nbsp; &#9829; ${post.likes}</div>
+      <div class="replies">
+        <div class="replies-header">Replies</div>
+        ${repliesHtml}
+      </div>
+    </div>`;
+}
+
+/**
  * Render report screen with form fields
  */
 function renderReport() {
   const step = REPORT_STEPS[reportStep];
   let fieldHtml = '';
 
-  if (step.type === 'radio') {
+  if (step.type === 'info') {
+    fieldHtml = `<div class="info-box" style="background:#f0f8ff;border-left:4px solid #4a90c8;padding:16px;border-radius:4px;color:#1e2235;font-size:14px;">${step.q}</div>`;
+  } else if (step.type === 'radio') {
     fieldHtml = `<div class="radio-row">
       ${step.opts.map((opt, i) => 
         `<label><input type="radio" name="ropt" ${i === 0 ? 'checked' : ''}> ${opt}</label>`
@@ -237,6 +296,15 @@ function go(screen) {
 }
 
 /**
+ * Open a forum post detail screen
+ */
+function openForumPost(postId) {
+  forumPostId = postId;
+  currentScreen = 'forum-detail';
+  render();
+}
+
+/**
  * Submit a report and show success message
  */
 function submitReport() {
@@ -252,7 +320,7 @@ function submitReport() {
 }
 
 /**
- * Send a chat message and get a response
+ * Send a chat message and get a response from Ollama/Gemma or fallback
  */
 function sendChat(which) {
   const tf = document.getElementById('tf-' + which);
@@ -261,20 +329,20 @@ function sendChat(which) {
   const val = tf.value.trim();
   if (!val) return;
 
-  const pool = which === 'what' ? WHAT_PROMPTS : IDENTIFY_PROMPTS;
-  let idx = which === 'what' ? chatWhatIndex : chatIdentifyIndex;
-  const reply = pool[idx % pool.length];
-
+  // Add user message immediately
   if (which === 'what') {
-    chatWhatMessages.push({ user: val, bot: reply.bot });
+    chatWhatMessages.push({ user: val, bot: '...' });
     chatWhatIndex++;
   } else {
-    chatIdentifyMessages.push({ user: val, bot: reply.bot });
+    chatIdentifyMessages.push({ user: val, bot: '...' });
     chatIdentifyIndex++;
   }
 
   tf.value = '';
   render();
+
+  // Try to get response from browser-based Gemma
+  queryGemma(val, which);
 
   // Scroll to bottom of messages
   setTimeout(() => {
@@ -283,5 +351,173 @@ function sendChat(which) {
   }, 50);
 }
 
+/**
+ * Initialize the AI model (called once on startup)
+ */
+async function initializeModel() {
+  if (modelReady || pipeline) return;
+  
+  try {
+    // Dynamic import of Transformers.js
+    const { pipeline: transformersPipeline } = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.13.4');
+    console.log('Loading Gemma model (first load ~200MB, please wait)...');
+    pipeline = await transformersPipeline('text2text-generation', MODEL_ID);
+    modelReady = true;
+    console.log('✓ Gemma model ready!');
+    if (currentScreen === 'home') render();
+  } catch (error) {
+    console.warn('Model initialization failed:', error);
+  }
+}
+
+/**
+ * Query Gemma model running in browser (no API key needed!)
+ */
+async function queryGemma(userMessage, which) {
+  try {
+    // Ensure model is ready
+    if (!modelReady) {
+      useMockResponse(which);
+      return;
+    }
+
+    // Show thinking state
+    if (which === 'what') {
+      chatWhatMessages[chatWhatMessages.length - 1].bot = '⏳ Generating response...';
+    } else {
+      chatIdentifyMessages[chatIdentifyMessages.length - 1].bot = '⏳ Generating response...';
+    }
+    render();
+
+    // Build the prompt
+    const systemContext = `You are a helpful assistant providing guidance on discrimination and workers' rights. Give clear, concise advice in 1-2 sentences.`;
+    const fullPrompt = `${systemContext}\n\nUser: ${userMessage}\n\nAssistant:`;
+
+    // Generate response (this runs entirely in the browser!)
+    const result = await pipeline(fullPrompt, {
+      max_new_tokens: 150,
+      temperature: 0.7,
+      top_p: 0.9,
+      repetition_penalty: 1.2
+    });
+
+    let botReply = result[0]?.generated_text || '';
+    
+    // Clean up the response (remove the prompt part)
+    if (botReply.includes('Assistant:')) {
+      botReply = botReply.split('Assistant:')[1]?.trim() || 'I apologize, I could not generate a response.';
+    }
+    
+    // Further cleanup and truncate
+    botReply = botReply.replace(/^["']|["']$/g, '').trim();
+    if (botReply.length > 400) {
+      botReply = botReply.substring(0, 400) + '...';
+    }
+
+    // Update message with generated response
+    if (which === 'what') {
+      chatWhatMessages[chatWhatMessages.length - 1].bot = botReply || 'I apologize, I could not generate a response.';
+    } else {
+      chatIdentifyMessages[chatIdentifyMessages.length - 1].bot = botReply || 'I apologize, I could not generate a response.';
+    }
+    usingAI = true;
+    render();
+  } catch (error) {
+    console.warn('Generation error:', error);
+    useMockResponse(which);
+  }
+}
+
+/**
+ * Query Hugging Face Gemma API for a response
+ */
+async function queryHuggingFace(userMessage, which) {
+  const hfToken = getHFToken();
+  
+  // If no token, use mock responses
+  if (!hfToken) {
+    useMockResponse(which);
+    return;
+  }
+
+  try {
+    // Build the prompt with context
+    const prompt = `System: ${OLLAMA_SYSTEM_PROMPT}\n\nUser: ${userMessage}\n\nAssistant:`;
+
+    const response = await fetch(HF_API_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${hfToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        inputs: prompt,
+        parameters: {
+          max_new_tokens: 200,
+          temperature: 0.7,
+          top_p: 0.9
+        }
+      })
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        console.warn('Invalid Hugging Face token');
+      }
+      throw new Error(`HF API error: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    
+    // Handle different response formats
+    let botReply;
+    if (Array.isArray(data) && data[0]?.generated_text) {
+      // Extract just the assistant's response (remove the prompt)
+      botReply = data[0].generated_text.split('Assistant:')[1]?.trim() || 'I apologize, I could not generate a response.';
+    } else if (data.generated_text) {
+      botReply = data.generated_text.trim();
+    } else {
+      throw new Error('Unexpected response format');
+    }
+    
+    // Limit response length
+    if (botReply.length > 500) {
+      botReply = botReply.substring(0, 500) + '...';
+    }
+    
+    // Update the last message with the actual response
+    if (which === 'what') {
+      chatWhatMessages[chatWhatMessages.length - 1].bot = botReply;
+    } else {
+      chatIdentifyMessages[chatIdentifyMessages.length - 1].bot = botReply;
+    }
+    usingAI = true;
+    render();
+  } catch (error) {
+    console.warn('HF API error:', error.message);
+    useMockResponse(which);
+  }
+}
+
+/**
+ * Use mock response as fallback
+ */
+function useMockResponse(which) {
+  const pool = which === 'what' ? WHAT_PROMPTS : IDENTIFY_PROMPTS;
+  const idx = which === 'what' ? (chatWhatIndex - 1) : (chatIdentifyIndex - 1);
+  const mockReply = pool[idx % pool.length].bot;
+
+  if (which === 'what') {
+    chatWhatMessages[chatWhatMessages.length - 1].bot = mockReply;
+  } else {
+    chatIdentifyMessages[chatIdentifyMessages.length - 1].bot = mockReply;
+  }
+  usingAI = false;
+  render();
+}
+
 // Initialize app on page load
 render();
+
+// Start loading the model in the background (no API key needed!)
+initializeModel();

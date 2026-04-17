@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Setup AI - Equity Navigator</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .container {
+      background: white;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 500px;
+      padding: 40px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+    
+    h1 {
+      font-size: 28px;
+      color: #1e2235;
+      margin-bottom: 12px;
+    }
+    
+    .subtitle {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 32px;
+    }
+    
+    .step {
+      margin-bottom: 28px;
+    }
+    
+    .step-number {
+      display: inline-block;
+      width: 28px;
+      height: 28px;
+      background: #667eea;
+      color: white;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 28px;
+      font-weight: bold;
+      margin-right: 10px;
+      font-size: 14px;
+    }
+    
+    .step-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1e2235;
+      display: inline-block;
+      margin-bottom: 8px;
+    }
+    
+    .step-description {
+      font-size: 14px;
+      color: #666;
+      line-height: 1.6;
+      margin-left: 38px;
+    }
+    
+    .step-description a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    
+    .step-description a:hover {
+      text-decoration: underline;
+    }
+    
+    .input-section {
+      background: #f9f9f9;
+      border: 2px solid #eee;
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 12px;
+    }
+    
+    .input-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+      display: block;
+    }
+    
+    input[type="password"] {
+      width: 100%;
+      padding: 12px 14px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: 'Courier New', monospace;
+      transition: border-color 0.2s;
+    }
+    
+    input[type="password"]:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    
+    button {
+      flex: 1;
+      padding: 12px 16px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .btn-save {
+      background: #667eea;
+      color: white;
+    }
+    
+    .btn-save:hover {
+      background: #5568d3;
+    }
+    
+    .btn-cancel {
+      background: #f0f0f0;
+      color: #1e2235;
+    }
+    
+    .btn-cancel:hover {
+      background: #e0e0e0;
+    }
+    
+    .success-message {
+      background: #d4edda;
+      border: 2px solid #28a745;
+      color: #155724;
+      padding: 14px;
+      border-radius: 8px;
+      margin-top: 16px;
+      display: none;
+      font-size: 14px;
+    }
+    
+    .error-message {
+      background: #f8d7da;
+      border: 2px solid #dc3545;
+      color: #721c24;
+      padding: 14px;
+      border-radius: 8px;
+      margin-top: 16px;
+      display: none;
+      font-size: 14px;
+    }
+    
+    .link-section {
+      background: #f0f4ff;
+      border-left: 4px solid #667eea;
+      padding: 14px;
+      border-radius: 6px;
+      margin-top: 24px;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    
+    .link-section strong {
+      color: #1e2235;
+    }
+    
+    .info-section {
+      background: #fef3cd;
+      border-left: 4px solid #ffc107;
+      padding: 14px;
+      border-radius: 6px;
+      margin-top: 16px;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔧 Setup AI Chatbot</h1>
+    <p class="subtitle">Enable Gemma 7B AI in 3 easy steps</p>
+    
+    <div class="step">
+      <span class="step-number">1</span>
+      <div class="step-title">Get a Free Token</div>
+      <div class="step-description">
+        Sign up for free at <a href="https://huggingface.co" target="_blank">huggingface.co</a>
+        <br><br>
+        Then go to: Profile → Settings → Access Tokens
+      </div>
+    </div>
+    
+    <div class="step">
+      <span class="step-number">2</span>
+      <div class="step-title">Create a Read Token</div>
+      <div class="step-description">
+        Click "New token" → Name it "Equity Navigator" → Set access level to "Read" → Create
+        <br><br>
+        Copy the token (starts with <code style="background: #f0f0f0; padding: 2px 6px;">hf_</code>)
+      </div>
+    </div>
+    
+    <div class="step">
+      <span class="step-number">3</span>
+      <div class="step-title">Paste It Below</div>
+      <div class="step-description">
+        <div class="input-section">
+          <label class="input-label">Your Hugging Face Token</label>
+          <input type="password" id="tokenInput" placeholder="hf_..." />
+          <div class="button-group">
+            <button class="btn-save" onclick="saveToken()">Save & Test</button>
+            <button class="btn-cancel" onclick="goHome()">Cancel</button>
+          </div>
+          <div id="successMsg" class="success-message">
+            ✓ Token saved! The chatbot is now enabled.
+          </div>
+          <div id="errorMsg" class="error-message"></div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="info-section">
+      <strong>📊 Free Tier:</strong> 30,000 requests/month. Plenty for most users!
+      <br>
+      <strong>Upgrade:</strong> $9/month for unlimited requests on Hugging Face.
+    </div>
+    
+    <div class="link-section">
+      <strong>Need help?</strong> See our detailed 
+      <a href="HF_SETUP.md" target="_blank" style="color: #667eea;">setup guide</a> or visit
+      <a href="https://huggingface.co/docs" target="_blank" style="color: #667eea;">HF docs</a>
+    </div>
+  </div>
+
+  <script>
+    function saveToken() {
+      const token = document.getElementById('tokenInput').value.trim();
+      const errorMsg = document.getElementById('errorMsg');
+      const successMsg = document.getElementById('successMsg');
+      
+      if (!token) {
+        errorMsg.textContent = '❌ Please enter your token';
+        errorMsg.style.display = 'block';
+        successMsg.style.display = 'none';
+        return;
+      }
+      
+      if (!token.startsWith('hf_')) {
+        errorMsg.textContent = '❌ Token should start with "hf_"';
+        errorMsg.style.display = 'block';
+        successMsg.style.display = 'none';
+        return;
+      }
+      
+      // Save to localStorage
+      localStorage.setItem('hf_token', token);
+      
+      successMsg.style.display = 'block';
+      errorMsg.style.display = 'none';
+      document.getElementById('tokenInput').value = '';
+      
+      // Redirect to app after 2 seconds
+      setTimeout(() => {
+        window.location.href = 'index.html';
+      }, 2000);
+    }
+    
+    function goHome() {
+      window.location.href = 'index.html';
+    }
+    
+    // Allow Enter key to save
+    document.getElementById('tokenInput').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        saveToken();
+      }
+    });
+    
+    // Check if token already exists
+    window.addEventListener('load', function() {
+      if (localStorage.getItem('hf_token')) {
+        document.getElementById('successMsg').style.display = 'block';
+        document.getElementById('successMsg').textContent = '✓ You already have a token set! Redirecting...';
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 1500);
+      }
+    });
+  </script>
+</body>
+</html>

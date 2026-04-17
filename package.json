@@ -1,0 +1,26 @@
+{
+  "name": "equity-navigator",
+  "version": "1.0.0",
+  "description": "An app to help people understand and report discrimination incidents anonymously",
+  "main": "ollama-proxy.js",
+  "scripts": {
+    "start": "node ollama-proxy.js",
+    "dev": "nodemon ollama-proxy.js"
+  },
+  "keywords": [
+    "discrimination",
+    "reporting",
+    "equity",
+    "guidance"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "node-fetch": "^2.6.11"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.20"
+  }
+}
