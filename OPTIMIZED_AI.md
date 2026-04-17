@@ -51,19 +51,6 @@ This version of Equity Navigator uses **advanced optimizations** to make browser
 
 ## Technical Details
 
-### Model Configuration
-```javascript
-// The app uses:
-const MODEL_ID = 'onnx-community/gemma-2b-it-v4-proxy-onnx';
-
-// With these optimizations:
-{
-  dtype: 'q4',                    // 4-bit quantization
-  device_map: 'auto',             // Auto-select WASM or WebGPU
-  progress_callback: (progress) => // Real-time download tracking
-}
-```
-
 ### File Structure
 ```
 index.html                    ← Loads coi-serviceworker.js
