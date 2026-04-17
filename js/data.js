@@ -112,19 +112,6 @@ const REPORT_STEPS = [
   }
 ];
 
-// Guidance prompts (What should I do?)
-const WHAT_PROMPTS = [
-  {
-    bot: "That pattern can indicate retaliation, which is protected conduct under most anti-discrimination laws. I'd suggest: (1) Document the date, meeting name, and who attended. (2) Send a follow-up email asking to be included in future meetings — this creates a paper trail. (3) If it continues, you can raise it with HR under your company's anti-retaliation policy."
-  },
-  {
-    bot: "Repeated comments about your accent may constitute national-origin harassment. You have options: (1) If comfortable, calmly tell the colleague the comments are unwelcome. (2) Document each incident with dates and exact words. (3) Report to HR — you don't have to confront them directly. You're protected from retaliation for making a good-faith complaint."
-  },
-  {
-    bot: "This could be discriminatory if protected characteristics played a role. Key steps: (1) Request written feedback on why you weren't selected. (2) Compare your qualifications to whoever was promoted. (3) Check if there's a pattern — were others in your group also passed over? Document everything and consider consulting your HR policy or an employment attorney."
-  }
-];
-
 // Identification prompts (Identify an experience) - Will use Ollama/Gemma if available
 const IDENTIFY_PROMPTS = [
   {
