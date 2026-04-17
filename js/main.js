@@ -78,14 +78,9 @@ function renderSplash(container) {
  * Render home screen
  */
 function renderHome() {
-  const statusHtml = modelReady 
-    ? '<div class="ai-status">🤖 AI Ready (Browser)</div>'
-    : '<div class="ai-loading">⏳ Loading AI Model... (First time only, ~200MB)</div>';
-  
   return `<div class="home-inner">
     <div class="home-logo">E<span>Q</span>UITY<br>NAVIGATOR</div>
     <button class="main-btn" onclick="go('report')">Anonymously document an incident</button>
-    ${statusHtml}
     <div class="grid2">
       <div class="grid-btn" onclick="go('chat-what')">What should I do?</div>
       <div class="grid-btn" onclick="go('chat-identify')">Identify an experience</div>
