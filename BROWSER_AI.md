@@ -13,8 +13,6 @@ The Equity Navigator now runs **Gemma AI directly in your browser** - completely
 ## First Load (One-Time Setup)
 
 **First time you open the app:**
-1. You'll see: "⏳ Loading AI Model..."
-2. Gemma 2B downloads (~200MB) and loads
 3. **Takes 30 seconds to 2 minutes** depending on internet speed
 4. Status changes to "🤖 AI Ready (Browser)"
 5. Try the chatbot - it now works!

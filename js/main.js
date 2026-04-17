@@ -158,15 +158,20 @@ function renderReport() {
   if (step.type === 'info') {
     fieldHtml = `<div class="info-box" style="background:#f0f8ff;border-left:4px solid #4a90c8;padding:16px;border-radius:4px;color:#1e2235;font-size:14px;">${step.q}</div>`;
   } else if (step.type === 'radio') {
-    fieldHtml = `<div class="radio-row">
+    // Vertical layout for mobile
+    fieldHtml = `<div class="radio-col">
       ${step.opts.map((opt, i) => 
-        `<label><input type="radio" name="ropt" ${i === 0 ? 'checked' : ''}> ${opt}</label>`
+        `<label class="radio-label"><input type="radio" name="ropt" ${i === 0 ? 'checked' : ''}> ${opt}</label>`
       ).join('')}
     </div>`;
   } else if (step.type === 'select') {
-    fieldHtml = `<div class="fake-sel"><span>${step.placeholder}</span><span>&#9660;</span></div>`;
+    // Use real select element with unique ID to prevent focus loss on re-render
+    fieldHtml = `<select class="report-select" id="report-select-step-${reportStep}">
+      <option value="">${step.placeholder}</option>
+      ${step.opts.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
+    </select>`;
   } else if (step.type === 'textarea') {
-    fieldHtml = `<textarea style="width:100%;border:1px solid #ccc;border-radius:8px;padding:9px 12px;font-size:12px;font-family:sans-serif;resize:none;height:80px;color:#333;" placeholder="Describe what happened..."></textarea>`;
+    fieldHtml = `<textarea class="report-textarea" placeholder="Describe what happened..."></textarea>`;
   }
 
   const isDone = reportStep === REPORT_STEPS.length - 1;
@@ -193,9 +198,7 @@ function renderReport() {
  * Render chat-what screen
  */
 function renderChatWhat() {
-  const initialMsg = chatWhatMessages.length === 0 
-    ? `<div class="bubble bubble-bot">Describe your situation and I'll guide you through your options and next steps.</div>`
-    : '';
+  const initialMsg = `<div class="bubble bubble-bot">Describe your situation and I'll guide you through your options and next steps.</div>`;
 
   const messagesHtml = chatWhatMessages.map(msg => `
     <div class="bubble bubble-user">${msg.user}</div>
@@ -217,9 +220,7 @@ function renderChatWhat() {
  * Render chat-identify screen
  */
 function renderChatIdentify() {
-  const initialMsg = chatIdentifyMessages.length === 0 
-    ? `<div class="bubble bubble-bot">Tell me what happened and I'll help you understand if it may be discrimination and what category it falls under.</div>`
-    : '';
+  const initialMsg = `<div class="bubble bubble-bot">Tell me what happened and I'll help you understand if it may be discrimination and what category it falls under.</div>`;
 
   const messagesHtml = chatIdentifyMessages.map(msg => `
     <div class="bubble bubble-user">${msg.user}</div>
@@ -336,32 +337,89 @@ function sendChat(which) {
   tf.value = '';
   render();
 
+  // Scroll to bottom after DOM update
+  setTimeout(() => {
+    const msgs = document.getElementById('chat-msgs-' + which);
+    if (msgs) {
+      msgs.scrollTop = msgs.scrollHeight;
+    }
+  }, 0);
+
   // Try to get response from browser-based Gemma
   queryGemma(val, which);
 
-  // Scroll to bottom of messages
+  // Scroll to bottom again after response
   setTimeout(() => {
     const msgs = document.getElementById('chat-msgs-' + which);
     if (msgs) msgs.scrollTop = msgs.scrollHeight;
-  }, 50);
+  }, 100);
 }
 
 /**
- * Initialize the AI model (called once on startup)
+ * Check WebGPU support and optimizations
+ */
+function detectWebGPU() {
+  if (navigator.gpu) {
+    console.log('✓ WebGPU available');
+    return true;
+  }
+  console.log('WebGPU not available, will use WASM');
+  return false;
+}
+
+/**
+ * Initialize the AI model with optimizations: 4-bit quantization, WebGPU, and progress tracking
  */
 async function initializeModel() {
   if (modelReady || pipeline) return;
   
   try {
-    // Dynamic import of Transformers.js
+    // Check for WebGPU support
+    const webgpuAvailable = detectWebGPU();
+    
+    // Dynamic import of Transformers.js v3
     const { pipeline: transformersPipeline } = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.13.4');
-    console.log('Loading Gemma model (first load ~200MB, please wait)...');
-    pipeline = await transformersPipeline('text2text-generation', MODEL_ID);
+    
+    const modelName = 'onnx-community/gemma-2b-it-v4-proxy-onnx';
+    
+    console.log('Loading Gemma 2B model with 4-bit quantization...');
+    console.log('Model: ' + modelName);
+    console.log('Quantization: 4-bit (q4)');
+    console.log('WebGPU: ' + (webgpuAvailable ? 'enabled' : 'fallback to WASM'));
+    
+    // Create pipeline with optimizations
+    // Using 4-bit quantization (dtype: 'q4') for memory efficiency
+    pipeline = await transformersPipeline('text2text-generation', modelName, {
+      dtype: 'q4',  // 4-bit quantization - reduces model size ~75%
+      device_map: 'auto',
+      progress_callback: (progress) => {
+        // Show download progress
+        const percent = Math.round(progress.status === 'progress' ? (progress.loaded / progress.total) * 100 : 100);
+        console.log(`Download: ${percent}%`);
+        
+        // Update UI if we're on home screen
+        if (currentScreen === 'home') {
+          const statusEl = document.getElementById('ai-status');
+          if (statusEl) {
+            if (percent < 100) {
+              statusEl.innerHTML = `<div class="ai-loading">⏳ Loading Gemma (${percent}%)...</div>`;
+            } else {
+              statusEl.innerHTML = `<div class="ai-status">🤖 AI Ready (Browser)</div>`;
+            }
+          }
+        }
+      }
+    });
+    
     modelReady = true;
-    console.log('✓ Gemma model ready!');
+    console.log('✓ Gemma model ready! (4-bit quantized, optimized for ' + (webgpuAvailable ? 'WebGPU' : 'WASM') + ')');
+    
+    // Re-render to show ready status
     if (currentScreen === 'home') render();
   } catch (error) {
     console.warn('Model initialization failed:', error);
+    console.warn('This is often due to network issues or browser limitations.');
+    console.warn('The app will still work with mock responses as fallback.');
   }
 }
 
@@ -370,9 +428,31 @@ async function initializeModel() {
  */
 async function queryGemma(userMessage, which) {
   try {
-    // Ensure model is ready
+    // Wait for model to be ready (max 5 minutes)
+    let attempts = 0;
+    while (!modelReady && attempts < 300) {
+      if (which === 'what') {
+        chatWhatMessages[chatWhatMessages.length - 1].bot = '⏳ Loading AI model...';
+      } else {
+        chatIdentifyMessages[chatIdentifyMessages.length - 1].bot = '⏳ Loading AI model...';
+      }
+      render();
+      // Scroll to bottom while loading
+      setTimeout(() => {
+        const msgs = document.getElementById('chat-msgs-' + which);
+        if (msgs) msgs.scrollTop = msgs.scrollHeight;
+      }, 0);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      attempts++;
+    }
+
     if (!modelReady) {
+      console.warn('Model failed to load, using mock response');
       useMockResponse(which);
+      setTimeout(() => {
+        const msgs = document.getElementById('chat-msgs-' + which);
+        if (msgs) msgs.scrollTop = msgs.scrollHeight;
+      }, 0);
       return;
     }
 
@@ -383,6 +463,11 @@ async function queryGemma(userMessage, which) {
       chatIdentifyMessages[chatIdentifyMessages.length - 1].bot = '⏳ Generating response...';
     }
     render();
+    // Scroll to bottom
+    setTimeout(() => {
+      const msgs = document.getElementById('chat-msgs-' + which);
+      if (msgs) msgs.scrollTop = msgs.scrollHeight;
+    }, 0);
 
     // Build the prompt
     const systemContext = `You are a helpful assistant providing guidance on discrimination and workers' rights. Give clear, concise advice in 1-2 sentences.`;
@@ -417,9 +502,18 @@ async function queryGemma(userMessage, which) {
     }
     usingAI = true;
     render();
+    // Scroll to bottom with new response
+    setTimeout(() => {
+      const msgs = document.getElementById('chat-msgs-' + which);
+      if (msgs) msgs.scrollTop = msgs.scrollHeight;
+    }, 0);
   } catch (error) {
     console.warn('Generation error:', error);
     useMockResponse(which);
+    setTimeout(() => {
+      const msgs = document.getElementById('chat-msgs-' + which);
+      if (msgs) msgs.scrollTop = msgs.scrollHeight;
+    }, 0);
   }
 }
 

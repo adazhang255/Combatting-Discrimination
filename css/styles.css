@@ -352,6 +352,73 @@ body {
   justify-content: space-between;
 }
 
+/* Report form styling */
+.radio-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #1e2235;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+
+.radio-label:hover {
+  background-color: #f5f5f5;
+}
+
+.radio-label input[type="radio"] {
+  cursor: pointer;
+  accent-color: #5a7a42;
+}
+
+.report-select {
+  width: 100%;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+  color: #1e2235;
+  background: #fff;
+  margin-bottom: 12px;
+  font-family: sans-serif;
+  cursor: pointer;
+}
+
+.report-select:focus {
+  outline: none;
+  border-color: #5a7a42;
+  box-shadow: 0 0 3px rgba(90, 122, 66, 0.3);
+}
+
+.report-textarea {
+  width: 100%;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-family: sans-serif;
+  resize: none;
+  height: 80px;
+  color: #333;
+  margin-bottom: 12px;
+}
+
+.report-textarea:focus {
+  outline: none;
+  border-color: #5a7a42;
+  box-shadow: 0 0 3px rgba(90, 122, 66, 0.3);
+}
+
 .step-footer {
   display: flex;
   justify-content: space-between;

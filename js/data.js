@@ -100,7 +100,7 @@ const REPORT_STEPS = [
     q: 'Where did this occur?',
     type: 'select',
     placeholder: 'Select location type',
-    opts: ['Workplace', 'School/University', 'Housing', 'Public Accommodation', 'Law Enforcement', 'Healthcare', 'Other']
+    opts: ['Workplace', 'School/University', 'Housing', 'Public Accommodation', 'Government/Law Enforcement', 'Healthcare Facility', 'Transportation', 'Retail Store', 'Restaurant/Bar', 'Online/Social Media', 'Other']
   },
   {
     q: 'Briefly describe what happened (optional)',
