@@ -3,7 +3,7 @@
 ## Overview
 A structured institutional program and mobile application designed to provide comprehensive support, advocacy, and reporting mechanisms for individuals facing discrimination within the workplace or institution.
 
-The **Hybrid Support and Advocacy Program (App)** is a multi-faceted solution that bridges the gap between individual support and institutional accountability. By combining real-time assistance with long-term data collection, it fosters a safer, more equitable environment for all members of the institution.
+**Equity Navigator** is a multi-faceted solution that bridges the gap between individual support and institutional accountability. By combining real-time assistance with long-term data collection, it fosters a safer, more equitable environment for all members of the institution.
 
 ## Key Features
 
