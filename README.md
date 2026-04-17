@@ -1,4 +1,4 @@
-# Hybrid Support and Advocacy Program (App)
+# Equity Navigator
 
 ## Overview
 A structured institutional program and mobile application designed to provide comprehensive support, advocacy, and reporting mechanisms for individuals facing discrimination within the workplace or institution.
