@@ -2,7 +2,7 @@
 const NAV = [
   { id: 'home', icon: '&#8962;', label: 'Home' },
   { id: 'report', icon: '&#9998;', label: 'Report' },
-  { id: 'chat-what', icon: '&#63;', label: 'Guidance' },
+  { id: 'chat-guidance', icon: '&#63;', label: 'Guidance' },
   { id: 'forums', icon: '&#9993;', label: 'Forums' },
   { id: 'support', icon: '&#9829;', label: 'Support' }
 ];
@@ -115,19 +115,18 @@ const REPORT_STEPS = [
 // Identification prompts (Identify an experience) - Will use Ollama/Gemma if available
 const IDENTIFY_PROMPTS = [
   {
-    bot: "I'm here to help you understand if what you experienced may be discrimination. Tell me what happened and I'll ask clarifying questions to better understand the situation."
+    bot: "I am an AI, not an attorney. This is educational information and not legal advice.\n\nI'm here to help you understand if what you experienced may be discrimination. Tell me what happened and I'll ask clarifying questions to better understand the situation."
   }
 ];
 
-// Guidance prompts (What should I do?) - Will use Ollama/Gemma if available
 const WHAT_PROMPTS = [
   {
-    bot: "I'm here to help you understand your options and next steps. Tell me about your situation and I'll provide guidance on how to document the incident and what actions you can take."
+    bot: "I am an AI, not an attorney. This is educational information and not legal advice.\n\nHere are 3 practical next steps:\n1. Write down what happened, including dates, times, locations, people involved, witnesses, and exact words or actions.\n2. Preserve evidence such as messages, emails, screenshots, schedules, performance notes, or incident reports.\n3. Consider a trusted advocate, HR, a school office, a civil rights agency, legal aid, or another appropriate reporting channel based on where this happened."
   }
 ];
 
-// System prompt for Ollama/Gemma
-const OLLAMA_SYSTEM_PROMPT = `You are a knowledgeable assistant helping people understand discrimination and their rights. You provide:
+const LLM_SYSTEM_PROMPT = `You are a knowledgeable AI assistant for the current company, helping people understand discrimination and their rights. 
+You will provide:
 1. Clear explanations of what constitutes discrimination under US law
 2. Information about protected characteristics (race, color, religion, sex, national origin, age 40+, disability, genetic information)
 3. Guidance on documenting incidents with dates, witnesses, and specific details
@@ -135,4 +134,6 @@ const OLLAMA_SYSTEM_PROMPT = `You are a knowledgeable assistant helping people u
 5. Support resources and next steps
 6. Emphasis on confidentiality and non-retaliation protections
 
-Always be empathetic, non-judgmental, and encourage formal reporting when appropriate. Keep responses concise (2-3 sentences) for mobile display. Focus on actionable advice.`;
+If the user describes a situation that may involve discrimination, provide specific guidance on how to document and report it. If the situation is unclear, ask clarifying questions to gather more information. Always prioritize the user's safety and well-being in your responses.
+Always focus on actionable advice. Be empathetic, non-judgmental, and encourage formal reporting when appropriate. Keep responses concise (2-3 sentences) for mobile display.
+Do not answer unsafe requests or provide legal advice. Instead, direct users to appropriate resources and encourage them to seek professional help if needed.`;

@@ -7,11 +7,12 @@
 body {
   font-family: sans-serif;
   background: #f0ece8;
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   align-items: flex-start;
   justify-content: center;
   padding: 24px 16px;
+  overflow: hidden;
 }
 
 .frame {
@@ -20,14 +21,16 @@ body {
   background: #1e2235;
   border-radius: 40px;
   padding: 10px;
-  min-height: 700px;
+  height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
 }
 
 .screen-wrap {
   background: #fff;
   border-radius: 32px;
   overflow: hidden;
-  min-height: 680px;
+  height: 100%;
   display: flex;
   flex-direction: column;
 }
@@ -66,9 +69,10 @@ body {
 
 .body {
   flex: 1;
-  overflow-y: auto;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
+  height: 100%;
 }
 
 /* Splash Screen */
@@ -481,14 +485,18 @@ body {
   flex-direction: column;
   gap: 10px;
   overflow-y: auto;
+  min-height: 0;
 }
 
 .bubble {
   max-width: 78%;
+  height: auto;
   padding: 10px 13px;
   font-size: 13px;
   line-height: 1.45;
   border-radius: 18px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .bubble-user {
@@ -506,12 +514,52 @@ body {
   border-radius: 18px 18px 18px 4px;
 }
 
-.chat-input-row {
+.bubble-loading {
   display: flex;
   align-items: center;
+  gap: 6px;
+}
+
+.typing-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.typing-dots span {
+  width: 5px;
+  height: 5px;
+  background: #c85a6a;
+  border-radius: 50%;
+  animation: typingDot 1s infinite ease-in-out;
+}
+
+.typing-dots span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.typing-dots span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes typingDot {
+  0%, 80%, 100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+.chat-input-row {
+  display: flex;
+  align-items: flex-end;
   gap: 8px;
   padding: 10px 14px 14px;
   border-top: 0.5px solid #eee;
+  flex-shrink: 0;
 }
 
 .chat-tf {
@@ -521,9 +569,15 @@ body {
   border-radius: 22px;
   padding: 9px 14px;
   font-size: 13px;
+  line-height: 1.35;
   color: #333;
   font-family: sans-serif;
   outline: none;
+  resize: none;
+  min-height: 36px;
+  max-height: 120px;
+  overflow-y: hidden;
+  white-space: pre-wrap;
 }
 
 .send-btn {

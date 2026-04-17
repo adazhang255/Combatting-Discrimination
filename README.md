@@ -147,16 +147,6 @@ In `js/main.js`, the `initializeModel()` function uses:
 const modelName = 'onnx-community/gemma-2b-it-v4-proxy-onnx';
 ```
 
-To use a different model:
-```javascript
-// Faster, smaller:
-'onnx-community/phi-2-onnx'
-
-// Larger, more capable:
-'onnx-community/mistral-7b-v0.1-onnx'
-
-// Remember: Larger = longer download + slower inference
-```
 
 ### Adjust Quantization
 
@@ -170,7 +160,7 @@ dtype: 'fp16' // 16-bit (larger, faster, needs more RAM)
 ```
 
 ### Customize System Prompt
-In `js/data.js`, modify `OLLAMA_SYSTEM_PROMPT` to change how the AI responds.
+In `js/data.js`, modify `LLM_SYSTEM_PROMPT` to change how the AI responds.
 
 ## Data & Privacy
 

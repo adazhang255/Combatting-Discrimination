@@ -1,21 +1,21 @@
 // Application state
 let currentScreen = 'splash';
 let reportStep = 0;
-let chatWhatIndex = 0;
-let chatIdentifyIndex = 0;
-let chatWhatMessages = [];
-let chatIdentifyMessages = [];
+let chatMode = 'steps';
+let chatIndex = 0;
+let chatMessages = [];
 let forumPostId = null;
 let usingAI = false;
 let modelReady = false;
 let pipeline = null;
 
 // Configuration - Transformers.js for browser-side LLM
-// Using Xenova's quantized Gemma model (runs client-side, no API key needed!)
-const MODEL_ID = 'Xenova/gemma-1.1-2b-it';  // 2B quantized - works in browser
-// Alternative lighter models:
-// 'Xenova/Phi-2' - faster, smaller
-// 'Xenova/DistilBERT-base-uncased' - minimal, for testing
+// Using GPT-2 - small, ungated, and publicly accessible (no authentication needed!)
+const MODEL_ID = 'HuggingFaceTB/SmolLM2-135M-Instruct';  // 355M parameters - guaranteed ungated, works on GitHub Pages
+// Alternative ungated models:
+// 'distilgpt2' - smaller, faster (82M)
+// 'facebook/opt-350m' - 350M, slightly better quality
+// 'EleutherAI/gpt-neo-125m' - very lightweight (125M)
 
 /**
  * Main render function - updates DOM based on current screen state
@@ -45,10 +45,8 @@ function render() {
     html = renderForumDetail();
   } else if (currentScreen === 'report') {
     html = renderReport();
-  } else if (currentScreen === 'chat-what') {
-    html = renderChatWhat();
-  } else if (currentScreen === 'chat-identify') {
-    html = renderChatIdentify();
+  } else if (currentScreen === 'chat-guidance') {
+    html = renderChatGuidance();
   } else if (currentScreen === 'support') {
     html = renderSupport();
   }
@@ -82,8 +80,8 @@ function renderHome() {
     <div class="home-logo">E<span>Q</span>UITY<br>NAVIGATOR</div>
     <button class="main-btn" onclick="go('report')">Anonymously document an incident</button>
     <div class="grid2">
-      <div class="grid-btn" onclick="go('chat-what')">What should I do?</div>
-      <div class="grid-btn" onclick="go('chat-identify')">Identify an experience</div>
+      <div class="grid-btn" onclick="openChat('steps')">What should I do?</div>
+      <div class="grid-btn" onclick="openChat('identify')">Identify an experience</div>
       <div class="grid-btn" onclick="go('support')">Get support</div>
       <div class="grid-btn" onclick="go('forums')">Forums</div>
     </div>
@@ -195,47 +193,53 @@ function renderReport() {
 }
 
 /**
- * Render chat-what screen
+ * Render unified chat guidance screen
  */
-function renderChatWhat() {
-  const initialMsg = `<div class="bubble bubble-bot">Describe your situation and I'll guide you through your options and next steps.</div>`;
+function renderChatGuidance() {
+  const title = chatMode === 'identify' ? 'Identify discrimination' : 'What should I do?';
+  const placeholder = chatMode === 'identify' ? 'What happened?' : 'Describe your situation...';
+  const intro = chatMode === 'identify'
+    ? "Tell me what happened and I'll help you understand if it may be discrimination and what category it falls under."
+    : "Describe your situation and I'll guide you through your options and next steps.";
+  const initialMsg = `<div class="bubble bubble-bot">${intro}</div>`;
 
-  const messagesHtml = chatWhatMessages.map(msg => `
+  const messagesHtml = chatMessages.map(msg => `
     <div class="bubble bubble-user">${msg.user}</div>
-    <div class="bubble bubble-bot">${msg.bot}</div>`).join('');
+    ${renderBotMessage(msg)}`).join('');
 
   return `
-    <div class="dark-hdr"><span class="back" onclick="go('home')">&#8249;</span><span class="title">What should I do?</span></div>
-    <div class="chat-messages" id="chat-msgs-what">
+    <div class="dark-hdr"><span class="back" onclick="go('home')">&#8249;</span><span class="title">${title}</span></div>
+    <div class="chat-messages" id="chat-msgs-guidance">
       ${initialMsg}
       ${messagesHtml}
     </div>
     <div class="chat-input-row">
-      <input class="chat-tf" id="tf-what" placeholder="Describe your situation..." onkeydown="if(event.key==='Enter')sendChat('what')">
-      <div class="send-btn" onclick="sendChat('what')"><div class="send-arrow"></div></div>
+      <textarea
+        class="chat-tf"
+        id="tf-guidance"
+        placeholder="${placeholder}"
+        rows="1"
+        oninput="autoResizeChatInput(this)"
+        onkeydown="handleChatKeydown(event)"></textarea>
+      <div class="send-btn" onclick="sendChat()"><div class="send-arrow"></div></div>
     </div>`;
 }
 
 /**
- * Render chat-identify screen
+ * Render a normal bot reply or an animated waiting indicator.
  */
-function renderChatIdentify() {
-  const initialMsg = `<div class="bubble bubble-bot">Tell me what happened and I'll help you understand if it may be discrimination and what category it falls under.</div>`;
+function renderBotMessage(msg) {
+  if (!msg.pending) {
+    return `<div class="bubble bubble-bot">${msg.bot}</div>`;
+  }
 
-  const messagesHtml = chatIdentifyMessages.map(msg => `
-    <div class="bubble bubble-user">${msg.user}</div>
-    <div class="bubble bubble-bot">${msg.bot}</div>`).join('');
-
-  return `
-    <div class="dark-hdr"><span class="back" onclick="go('home')">&#8249;</span><span class="title">Identify discrimination</span></div>
-    <div class="chat-messages" id="chat-msgs-identify">
-      ${initialMsg}
-      ${messagesHtml}
-    </div>
-    <div class="chat-input-row">
-      <input class="chat-tf" id="tf-identify" placeholder="What happened?" onkeydown="if(event.key==='Enter')sendChat('identify')">
-      <div class="send-btn" onclick="sendChat('identify')"><div class="send-arrow"></div></div>
-    </div>`;
+  const label = msg.status || 'Thinking';
+  return `<div class="bubble bubble-bot bubble-loading" aria-live="polite">
+    <span>${label}</span>
+    <span class="typing-dots" aria-hidden="true">
+      <span></span><span></span><span></span>
+    </span>
+  </div>`;
 }
 
 /**
@@ -273,7 +277,7 @@ function renderBottomNav(app) {
     const btn = document.createElement('button');
     btn.className = 'nav-item' + (currentScreen === n.id ? ' on' : '');
     btn.innerHTML = `<span class="nav-icon">${n.icon}</span>${n.label}`;
-    btn.onclick = () => go(n.id);
+    btn.onclick = () => n.id === 'chat-guidance' ? openChat(chatMode || 'steps') : go(n.id);
     nav.appendChild(btn);
   });
 
@@ -284,11 +288,29 @@ function renderBottomNav(app) {
  * Navigate to a screen
  */
 function go(screen) {
+  if (screen === 'chat-what') {
+    openChat('steps');
+    return;
+  }
+  if (screen === 'chat-identify') {
+    openChat('identify');
+    return;
+  }
   if (screen === 'report') {
     reportStep = 0;
   }
   currentScreen = screen;
   render();
+}
+
+/**
+ * Open the shared guidance chat with mode-specific behavior
+ */
+function openChat(mode) {
+  chatMode = mode === 'identify' ? 'identify' : 'steps';
+  currentScreen = 'chat-guidance';
+  render();
+  scrollChatToBottom();
 }
 
 /**
@@ -318,41 +340,82 @@ function submitReport() {
 /**
  * Send a chat message and get a response from Ollama/Gemma or fallback
  */
-function sendChat(which) {
-  const tf = document.getElementById('tf-' + which);
+function sendChat() {
+  const tf = document.getElementById('tf-guidance');
   if (!tf) return;
 
   const val = tf.value.trim();
   if (!val) return;
 
   // Add user message immediately
-  if (which === 'what') {
-    chatWhatMessages.push({ user: val, bot: '...' });
-    chatWhatIndex++;
-  } else {
-    chatIdentifyMessages.push({ user: val, bot: '...' });
-    chatIdentifyIndex++;
-  }
+  const responseMode = chatMode;
+  const messageIndex = chatMessages.push({
+    user: val,
+    bot: '',
+    pending: true,
+    status: 'Thinking'
+  }) - 1;
+  chatIndex++;
 
   tf.value = '';
+  tf.style.height = 'auto';
   render();
 
   // Scroll to bottom after DOM update
-  setTimeout(() => {
-    const msgs = document.getElementById('chat-msgs-' + which);
-    if (msgs) {
-      msgs.scrollTop = msgs.scrollHeight;
-    }
-  }, 0);
+  scrollChatToBottom();
 
-  // Try to get response from browser-based Gemma
-  queryGemma(val, which);
+  // Let the browser paint the user's message before starting model work.
+  queueChatResponse(val, messageIndex, responseMode);
 
   // Scroll to bottom again after response
-  setTimeout(() => {
-    const msgs = document.getElementById('chat-msgs-' + which);
-    if (msgs) msgs.scrollTop = msgs.scrollHeight;
-  }, 100);
+  scrollChatToBottom(100);
+}
+
+/**
+ * Start the AI response after the user message has rendered.
+ */
+function queueChatResponse(message, messageIndex, responseMode) {
+  requestAnimationFrame(() => {
+    setTimeout(() => queryGemma(message, messageIndex, responseMode), 0);
+  });
+}
+
+/**
+ * Keep chat textarea compact until content needs more space.
+ */
+function autoResizeChatInput(textarea) {
+  textarea.style.height = 'auto';
+  const nextHeight = Math.min(textarea.scrollHeight, 120);
+  textarea.style.height = nextHeight + 'px';
+  textarea.style.overflowY = textarea.scrollHeight > 120 ? 'auto' : 'hidden';
+}
+
+/**
+ * Enter sends, Shift+Enter inserts a newline.
+ */
+function handleChatKeydown(event) {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault();
+    sendChat();
+  }
+}
+
+/**
+ * Scroll the shared chat feed to the newest message.
+ */
+function scrollChatToBottom(delay = 0) {
+  const scroll = () => {
+    requestAnimationFrame(() => {
+      const msgs = document.getElementById('chat-msgs-guidance');
+      if (msgs) msgs.scrollTop = msgs.scrollHeight;
+    });
+  };
+
+  if (delay > 0) {
+    setTimeout(scroll, delay);
+  } else {
+    scroll();
+  }
 }
 
 /**
@@ -377,21 +440,18 @@ async function initializeModel() {
     // Check for WebGPU support
     const webgpuAvailable = detectWebGPU();
     
-    // Dynamic import of Transformers.js v3
-    const { pipeline: transformersPipeline } = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.13.4');
+    // Dynamic import of Transformers.js
+    const { pipeline: transformersPipeline } = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.3.3');
     
-    const modelName = 'onnx-community/gemma-2b-it-v4-proxy-onnx';
+    const modelName = MODEL_ID;  // Using GPT-2 - ungated, no authentication required
     
-    console.log('Loading Gemma 2B model with 4-bit quantization...');
+    console.log('Loading GPT-2 model...');
     console.log('Model: ' + modelName);
-    console.log('Quantization: 4-bit (q4)');
     console.log('WebGPU: ' + (webgpuAvailable ? 'enabled' : 'fallback to WASM'));
     
-    // Create pipeline with optimizations
-    // Using 4-bit quantization (dtype: 'q4') for memory efficiency
-    pipeline = await transformersPipeline('text2text-generation', modelName, {
-      dtype: 'q4',  // 4-bit quantization - reduces model size ~75%
-      device_map: 'auto',
+    // Create pipeline for text generation
+    // GPT-2 is publicly accessible, no gating or auth needed
+    pipeline = await transformersPipeline('text-generation', modelName, {
       progress_callback: (progress) => {
         // Show download progress
         const percent = Math.round(progress.status === 'progress' ? (progress.loaded / progress.total) * 100 : 100);
@@ -402,7 +462,7 @@ async function initializeModel() {
           const statusEl = document.getElementById('ai-status');
           if (statusEl) {
             if (percent < 100) {
-              statusEl.innerHTML = `<div class="ai-loading">⏳ Loading Gemma (${percent}%)...</div>`;
+              statusEl.innerHTML = `<div class="ai-loading">⏳ Loading GPT-2 (${percent}%)...</div>`;
             } else {
               statusEl.innerHTML = `<div class="ai-status">🤖 AI Ready (Browser)</div>`;
             }
@@ -412,7 +472,7 @@ async function initializeModel() {
     });
     
     modelReady = true;
-    console.log('✓ Gemma model ready! (4-bit quantized, optimized for ' + (webgpuAvailable ? 'WebGPU' : 'WASM') + ')');
+    console.log('✓ Model ready! (optimized for ' + (webgpuAvailable ? 'WebGPU' : 'WASM') + ')');
     
     // Re-render to show ready status
     if (currentScreen === 'home') render();
@@ -426,51 +486,38 @@ async function initializeModel() {
 /**
  * Query Gemma model running in browser (no API key needed!)
  */
-async function queryGemma(userMessage, which) {
+async function queryGemma(userMessage, messageIndex, responseMode = chatMode) {
   try {
     // Wait for model to be ready (max 5 minutes)
     let attempts = 0;
     while (!modelReady && attempts < 300) {
-      if (which === 'what') {
-        chatWhatMessages[chatWhatMessages.length - 1].bot = '⏳ Loading AI model...';
-      } else {
-        chatIdentifyMessages[chatIdentifyMessages.length - 1].bot = '⏳ Loading AI model...';
-      }
+      if (!chatMessages[messageIndex]) return;
+      chatMessages[messageIndex].pending = true;
+      chatMessages[messageIndex].status = 'Loading AI model';
       render();
       // Scroll to bottom while loading
-      setTimeout(() => {
-        const msgs = document.getElementById('chat-msgs-' + which);
-        if (msgs) msgs.scrollTop = msgs.scrollHeight;
-      }, 0);
+      scrollChatToBottom();
       await new Promise(resolve => setTimeout(resolve, 1000));
       attempts++;
     }
 
     if (!modelReady) {
       console.warn('Model failed to load, using mock response');
-      useMockResponse(which);
-      setTimeout(() => {
-        const msgs = document.getElementById('chat-msgs-' + which);
-        if (msgs) msgs.scrollTop = msgs.scrollHeight;
-      }, 0);
+      useMockResponse(responseMode, messageIndex);
+      scrollChatToBottom();
       return;
     }
 
     // Show thinking state
-    if (which === 'what') {
-      chatWhatMessages[chatWhatMessages.length - 1].bot = '⏳ Generating response...';
-    } else {
-      chatIdentifyMessages[chatIdentifyMessages.length - 1].bot = '⏳ Generating response...';
-    }
+    if (!chatMessages[messageIndex]) return;
+    chatMessages[messageIndex].pending = true;
+    chatMessages[messageIndex].status = 'Generating response';
     render();
     // Scroll to bottom
-    setTimeout(() => {
-      const msgs = document.getElementById('chat-msgs-' + which);
-      if (msgs) msgs.scrollTop = msgs.scrollHeight;
-    }, 0);
+    scrollChatToBottom();
 
     // Build the prompt
-    const systemContext = `You are a helpful assistant providing guidance on discrimination and workers' rights. Give clear, concise advice in 1-2 sentences.`;
+    const systemContext = getChatSystemPrompt(responseMode);
     const fullPrompt = `${systemContext}\n\nUser: ${userMessage}\n\nAssistant:`;
 
     // Generate response (this runs entirely in the browser!)
@@ -481,57 +528,73 @@ async function queryGemma(userMessage, which) {
       repetition_penalty: 1.2
     });
 
-    let botReply = result[0]?.generated_text || '';
+    // GPT-2 returns array with {generated_text: "prompt + generated"}
+    let botReply = Array.isArray(result) ? result[0]?.generated_text : result?.generated_text || '';
     
-    // Clean up the response (remove the prompt part)
-    if (botReply.includes('Assistant:')) {
-      botReply = botReply.split('Assistant:')[1]?.trim() || 'I apologize, I could not generate a response.';
+    // Remove the input prompt to get just the assistant's response
+    if (botReply.startsWith(fullPrompt)) {
+      botReply = botReply.substring(fullPrompt.length).trim();
     }
     
-    // Further cleanup and truncate
+    // Further cleanup
     botReply = botReply.replace(/^["']|["']$/g, '').trim();
-    if (botReply.length > 400) {
-      botReply = botReply.substring(0, 400) + '...';
+    
+    if (!botReply) {
+      botReply = 'I apologize, I could not generate a response.';
     }
 
     // Update message with generated response
-    if (which === 'what') {
-      chatWhatMessages[chatWhatMessages.length - 1].bot = botReply || 'I apologize, I could not generate a response.';
-    } else {
-      chatIdentifyMessages[chatIdentifyMessages.length - 1].bot = botReply || 'I apologize, I could not generate a response.';
-    }
+    if (!chatMessages[messageIndex]) return;
+    chatMessages[messageIndex].bot = botReply;
+    chatMessages[messageIndex].pending = false;
+    chatMessages[messageIndex].status = '';
     usingAI = true;
     render();
     // Scroll to bottom with new response
-    setTimeout(() => {
-      const msgs = document.getElementById('chat-msgs-' + which);
-      if (msgs) msgs.scrollTop = msgs.scrollHeight;
-    }, 0);
+    scrollChatToBottom();
   } catch (error) {
     console.warn('Generation error:', error);
-    useMockResponse(which);
-    setTimeout(() => {
-      const msgs = document.getElementById('chat-msgs-' + which);
-      if (msgs) msgs.scrollTop = msgs.scrollHeight;
-    }, 0);
+    useMockResponse(responseMode, messageIndex);
+    scrollChatToBottom();
   }
+}
+
+/**
+ * Build mode-specific instructions for the AI while allowing the conversation to adapt.
+ */
+function getChatSystemPrompt(mode) {
+  const sharedInstructions = `You are a supportive educational assistant for discrimination, workplace rights, school rights, housing, public accommodations, and related reporting options.
+Start with: "I am an AI, not an attorney. This is educational information and not legal advice."
+Be empathetic, ask clarifying questions when facts are missing, and prioritize the user's safety and well-being.
+If the user changes the subject or asks for a different kind of help, adapt your guidance regardless of the initial button clicked.`;
+
+  if (mode === 'identify') {
+    return `${sharedInstructions}
+Prioritize identifying whether the described conduct may involve discrimination, harassment, retaliation, or another concern.
+Classify the likely category when possible, such as race/color, religion, sex, gender identity, sexual orientation, pregnancy, national origin, age, disability, genetic information, housing, education, public accommodations, or retaliation.
+Explain uncertainty clearly and name the facts that would matter.`;
+  }
+
+  return `${sharedInstructions}
+Prioritize giving 3 actionable next steps.
+Focus on practical actions such as documenting dates and witnesses, preserving messages or records, checking internal reporting options, contacting a trusted advocate, and considering external agencies such as the EEOC, a state civil rights agency, school Title IX office, housing authority, or local legal aid when relevant.`;
 }
 
 /**
  * Query Hugging Face Gemma API for a response
  */
-async function queryHuggingFace(userMessage, which) {
+async function queryHuggingFace(userMessage, messageIndex = chatMessages.length - 1, responseMode = chatMode) {
   const hfToken = getHFToken();
   
   // If no token, use mock responses
   if (!hfToken) {
-    useMockResponse(which);
+    useMockResponse(responseMode, messageIndex);
     return;
   }
 
   try {
     // Build the prompt with context
-    const prompt = `System: ${OLLAMA_SYSTEM_PROMPT}\n\nUser: ${userMessage}\n\nAssistant:`;
+    const prompt = `System: ${getChatSystemPrompt(responseMode)}\n\nUser: ${userMessage}\n\nAssistant:`;
 
     const response = await fetch(HF_API_URL, {
       method: 'POST',
@@ -569,38 +632,31 @@ async function queryHuggingFace(userMessage, which) {
       throw new Error('Unexpected response format');
     }
     
-    // Limit response length
-    if (botReply.length > 500) {
-      botReply = botReply.substring(0, 500) + '...';
-    }
-    
     // Update the last message with the actual response
-    if (which === 'what') {
-      chatWhatMessages[chatWhatMessages.length - 1].bot = botReply;
-    } else {
-      chatIdentifyMessages[chatIdentifyMessages.length - 1].bot = botReply;
-    }
+    if (!chatMessages[messageIndex]) return;
+    chatMessages[messageIndex].bot = botReply;
+    chatMessages[messageIndex].pending = false;
+    chatMessages[messageIndex].status = '';
     usingAI = true;
     render();
   } catch (error) {
     console.warn('HF API error:', error.message);
-    useMockResponse(which);
+    useMockResponse(responseMode, messageIndex);
   }
 }
 
 /**
  * Use mock response as fallback
  */
-function useMockResponse(which) {
-  const pool = which === 'what' ? WHAT_PROMPTS : IDENTIFY_PROMPTS;
-  const idx = which === 'what' ? (chatWhatIndex - 1) : (chatIdentifyIndex - 1);
+function useMockResponse(mode = chatMode, messageIndex = chatMessages.length - 1) {
+  const pool = mode === 'steps' ? WHAT_PROMPTS : IDENTIFY_PROMPTS;
+  const idx = messageIndex;
   const mockReply = pool[idx % pool.length].bot;
 
-  if (which === 'what') {
-    chatWhatMessages[chatWhatMessages.length - 1].bot = mockReply;
-  } else {
-    chatIdentifyMessages[chatIdentifyMessages.length - 1].bot = mockReply;
-  }
+  if (!chatMessages[messageIndex]) return;
+  chatMessages[messageIndex].bot = mockReply;
+  chatMessages[messageIndex].pending = false;
+  chatMessages[messageIndex].status = '';
   usingAI = false;
   render();
 }
