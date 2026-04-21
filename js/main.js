@@ -1,6 +1,7 @@
 // Application state
 let currentScreen = "splash";
 let reportStep = 0;
+let reportResponses = {};
 let chatMode = "steps";
 let chatIndex = 0;
 let chatMessages = [];
@@ -15,8 +16,10 @@ let modelLoadProgress = {
   lastLogTime: 0,
 };
 
+const REPORT_STORAGE_KEY = "eqnavigator_reports";
+
 // Configuration - Transformers.js for browser-side LLM
-const MODEL_ID = "onnx-community/gemma-3-1b-it-ONNX";
+const MODEL_ID = "HuggingFaceTB/SmolLM2-135M-Instruct";
 const TRANSFORMERS_JS_URL =
   "https://cdn.jsdelivr.net/npm/@huggingface/transformers@next";
 const MODEL_DEVICE = "webgpu";
@@ -212,23 +215,32 @@ function renderReport() {
   if (step.type === "info") {
     fieldHtml = `<div class="info-box" style="background:#f0f8ff;border-left:4px solid #4a90c8;padding:16px;border-radius:4px;color:#1e2235;font-size:14px;">${step.q}</div>`;
   } else if (step.type === "radio") {
-    // Vertical layout for mobile
+    const savedAnswer = getReportAnswer(reportStep) || step.opts[0];
+    if (!reportResponses[reportStep]) {
+      reportResponses[reportStep] = savedAnswer;
+    }
     fieldHtml = `<div class="radio-col">
       ${step.opts
         .map(
-          (opt, i) =>
-            `<label class="radio-label"><input type="radio" name="ropt" ${i === 0 ? "checked" : ""}> ${opt}</label>`,
+          (opt) =>
+            `<label class="radio-label"><input type="radio" name="ropt" value="${opt}" ${savedAnswer === opt ? "checked" : ""} onchange="saveReportAnswer(${reportStep}, this.value)"> ${opt}</label>`,
         )
         .join("")}
     </div>`;
   } else if (step.type === "select") {
-    // Use real select element with unique ID to prevent focus loss on re-render
-    fieldHtml = `<select class="report-select" id="report-select-step-${reportStep}">
+    const savedAnswer = getReportAnswer(reportStep);
+    fieldHtml = `<select class="report-select" id="report-select-step-${reportStep}" onchange="saveReportAnswer(${reportStep}, this.value)">
       <option value="">${step.placeholder}</option>
-      ${step.opts.map((opt) => `<option value="${opt}">${opt}</option>`).join("")}
+      ${step.opts
+        .map(
+          (opt) =>
+            `<option value="${opt}" ${savedAnswer === opt ? "selected" : ""}>${opt}</option>`,
+        )
+        .join("")}
     </select>`;
   } else if (step.type === "textarea") {
-    fieldHtml = `<textarea class="report-textarea" placeholder="Describe what happened..."></textarea>`;
+    const savedAnswer = getReportAnswer(reportStep);
+    fieldHtml = `<textarea class="report-textarea" placeholder="Describe what happened..." oninput="saveReportAnswer(${reportStep}, this.value)">${escapeHtml(savedAnswer)}</textarea>`;
   }
 
   const isDone = reportStep === REPORT_STEPS.length - 1;
@@ -440,7 +452,47 @@ function openForumPost(postId) {
 /**
  * Submit a report and show success message
  */
+function getReportAnswer(step) {
+  return reportResponses[step] || "";
+}
+
+function saveReportAnswer(step, value) {
+  if (typeof step !== "number") {
+    step = Number(step);
+  }
+  reportResponses[step] = value;
+}
+
+function getStoredReports() {
+  try {
+    const raw = localStorage.getItem(REPORT_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (error) {
+    console.warn("Unable to read stored reports", error);
+    return [];
+  }
+}
+
+function storeReport(report) {
+  try {
+    const existing = getStoredReports();
+    existing.push(report);
+    localStorage.setItem(REPORT_STORAGE_KEY, JSON.stringify(existing));
+  } catch (error) {
+    console.warn("Unable to save report", error);
+  }
+}
+
 function submitReport() {
+  const report = {
+    id: Date.now(),
+    createdAt: new Date().toISOString(),
+    answers: { ...reportResponses },
+  };
+
+  storeReport(report);
+  reportResponses = {};
+
   const el = document.getElementById("report-success");
   if (el) {
     el.innerHTML = `<div class="success-box"><p>&#10003; Your report has been submitted anonymously. A case number will be sent to your secure inbox. Thank you for speaking up.</p></div>`;
