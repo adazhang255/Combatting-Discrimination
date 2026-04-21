@@ -58,6 +58,8 @@ function render() {
     html = renderChatGuidance();
   } else if (currentScreen === "support") {
     html = renderSupport();
+  } else if (currentScreen === "faq") {
+    html = renderFaq();
   }
 
   bodyEl.innerHTML = html;
@@ -343,11 +345,40 @@ function renderSupport() {
       <a class="supp-link" href="https://www.nami.org/support-groups/" target="_blank" rel="noopener">Community support groups <span class="chev">&#8250;</span></a>
       <a class="supp-link" href="https://www.eeoc.gov/how-file-charge-employment-discrimination" target="_blank" rel="noopener">EEOC — file externally <span class="chev">&#8250;</span></a>
       <div class="supp-cat">Good to know</div>
-      <a class="supp-link" href="https://www.aclu.org/know-your-rights" target="_blank" rel="noopener">FAQs <span class="chev">&#8250;</span></a>
+      <button class="supp-link" onclick="go('faq')">FAQs <span class="chev">&#8250;</span></button>
       <a class="supp-link" href="https://www.eeoc.gov/retaliation" target="_blank" rel="noopener">Retaliation protections <span class="chev">&#8250;</span></a>
       <a class="supp-link" href="https://www.mentalhealth.gov/get-help" target="_blank" rel="noopener">Mental health resources <span class="chev">&#8250;</span></a>
     </div>`};
 
+/**
+ * Render FAQ page
+ */
+function renderFaq() {
+  return `
+    <div class="dark-hdr"><span class="back" onclick="go('support')">&#8249;</span><span class="title">FAQs</span></div>
+    <div class="faq-inner">
+      <div class="faq-item">
+        <div class="faq-question">How is this report handled?</div>
+        <div class="faq-answer">Your report is kept anonymous within the app. We do not collect names, emails, or device identifiers here.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question">Is this legal advice?</div>
+        <div class="faq-answer">No. This app gives educational guidance only. For legal advice, contact a lawyer, your local EEOC office, or a trusted advocate.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question">What counts as discrimination?</div>
+        <div class="faq-answer">Discrimination is unfair treatment based on protected characteristics like race, gender, religion, age, disability, national origin, pregnancy, sexual orientation, or retaliation.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question">What should I document?</div>
+        <div class="faq-answer">Write down dates, times, locations, what was said or done, who was present, and any evidence such as messages or emails.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question">Where can I get more help?</div>
+        <div class="faq-answer">Use the support page links to reach EEOC resources, legal aid, and mental health support. If you are in danger, contact local authorities immediately.</div>
+      </div>
+    </div>`;
+}
 
 /**
  * Render bottom navigation
