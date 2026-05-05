@@ -15,6 +15,14 @@ const REPORT_STORAGE_KEY = "eqnavigator_reports";
 const AI_PROXY_URL = "http://localhost:3001";
 const IS_LOCAL = ["localhost", "127.0.0.1"].includes(window.location.hostname);
 
+// Browser AI (used on GitHub Pages)
+let browserPipe = null;
+let BrowserTextStreamer = null;
+let browserModelStatus = "idle"; // idle | loading | ready | error
+let browserDownloadPct = 0;
+const BROWSER_MODEL_ID = "onnx-community/Llama-3.2-1B-Instruct-q4f16";
+const TRANSFORMERS_CDN = "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3/dist/transformers.min.js";
+
 /**
  * Main render function - updates DOM based on current screen state
  */
@@ -81,21 +89,30 @@ function restoreChatInputState(shouldFocus) {
  */
 function renderSplash(container) {
   container.innerHTML = `
-    <div class="splash">
+    <div class="splash" id="splash-screen">
       <div class="splash-brand">
         <div class="equity-word">
           <span class="eq-dark">E</span><span class="eq-rose">Q</span><span class="eq-dark">U</span><span class="eq-dark">I</span><span class="eq-dark">T</span><span class="eq-salmon">Y</span>
         </div>
         <div class="navigator-word">NAVIGATOR</div>
       </div>
-      <div class="logo-icon">
+      <div class="logo-icon" id="logo-icon">
         <div class="arc arc-left"></div>
         <div class="dot"></div>
         <div class="arc arc-right"></div>
       </div>
       <div class="tagline">Support. Guidance. Action.</div>
-      <button class="splash-btn" onclick="go('home')">Get started</button>
+      <button class="splash-btn" onclick="event.stopPropagation(); triggerSplashAnim()">Get started</button>
     </div>`;
+
+  document.getElementById("splash-screen").addEventListener("click", triggerSplashAnim);
+}
+
+function triggerSplashAnim() {
+  const icon = document.getElementById("logo-icon");
+  if (!icon || icon.classList.contains("closing")) return;
+  icon.classList.add("closing");
+  setTimeout(() => go("home"), 750);
 }
 
 /**
@@ -118,16 +135,18 @@ function renderHome() {
  * Render the AI connection status on the chat screen.
  */
 function renderModelStatus() {
-  if (aiReady) {
-    return `<div class="ai-status">Support Agent Ready (Local)</div>`;
+  if (IS_LOCAL) {
+    if (aiReady) return `<div class="ai-status">Support Agent Ready (Local)</div>`;
+    if (aiCheckDone) return `<div class="ai-status ai-status-warn">Support Agent offline. Using fallback responses. Run: npm start</div>`;
+    return `<div class="ai-loading">Connecting to Support Agent...</div>`;
   }
-  if (aiCheckDone) {
-    const msg = IS_LOCAL
-      ? "Support Agent offline. Using fallback responses. Run: npm start"
-      : "Stable Agent.";
-    return `<div class="ai-status ai-status-warn">${msg}</div>`;
+  if (browserModelStatus === "ready") return `<div class="ai-status">Support Agent Ready</div>`;
+  if (browserModelStatus === "loading") {
+    const pct = browserDownloadPct > 0 ? ` ${browserDownloadPct}%` : "...";
+    return `<div class="ai-loading">Downloading AI model${pct} (first visit only)</div>`;
   }
-  return `<div class="ai-loading">Connecting to Support Agent...</div>`;
+  if (browserModelStatus === "error") return `<div class="ai-status ai-status-warn">Using built-in responses.</div>`;
+  return `<div class="ai-loading">Initializing...</div>`;
 }
 
 /**
@@ -583,12 +602,48 @@ function scrollChatToBottom(delay = 0) {
   }
 }
 
+function getBrowserSystemPrompt(mode) {
+  const shared = `You are a supportive educational assistant for people experiencing discrimination. You are not an attorney and this is educational information, not legal advice — but you do not need to repeat this as a disclaimer in every response. You cover workplace rights, school/university rights, housing discrimination, and public accommodations.
+
+Be empathetic, direct, and specific to the user's situation. Vary your tone and structure based on what they describe. Write as much as the situation warrants — do not truncate or cut off mid-thought.`;
+
+  if (mode === "identify") {
+    return `${shared}
+
+Your task: Help identify whether the described conduct may involve discrimination, harassment, or retaliation. Name the likely category (e.g., race/color, religion, sex/gender, age, disability, national origin, housing, Title IX, public accommodation, or retaliation) and explain which specific facts point toward or away from that conclusion. Be honest about uncertainty — if there is not enough information, say what you would need to know.`;
+  }
+
+  return `${shared}
+
+Your task: Give 2–4 concrete next steps tailored to what the user described. Prioritize the most relevant actions for their specific situation — this might be documenting evidence, checking internal HR channels, contacting a specific agency (EEOC, Title IX office, HUD, state civil rights agency, local legal aid), or seeking support. Do not give a generic checklist; respond to the details they shared.`;
+}
+
 /**
  * Check if the local AI proxy is up and the model is ready.
  */
 async function initializeModel() {
   if (!IS_LOCAL) {
-    aiReady = false;
+    browserModelStatus = "loading";
+    render();
+    try {
+      const tf = await import(TRANSFORMERS_CDN);
+      BrowserTextStreamer = tf.TextStreamer;
+      const device = navigator.gpu ? "webgpu" : "wasm";
+      browserPipe = await tf.pipeline("text-generation", BROWSER_MODEL_ID, {
+        device,
+        progress_callback: ({ status, progress }) => {
+          if (status === "progress" && progress != null) {
+            browserDownloadPct = Math.round(progress);
+            render();
+          }
+        },
+      });
+      browserModelStatus = "ready";
+      aiReady = true;
+    } catch (err) {
+      console.error("Browser AI failed to load:", err);
+      browserModelStatus = "error";
+    }
     aiCheckDone = true;
     render();
     return;
@@ -612,8 +667,66 @@ async function queryOllama(userMessage, messageIndex, responseMode = chatMode) {
   if (!chatMessages[messageIndex]) return;
 
   if (!IS_LOCAL) {
-    useMockResponse(responseMode, messageIndex);
-    scrollChatToBottom();
+    if (browserModelStatus !== "ready" || !browserPipe || !BrowserTextStreamer) {
+      useMockResponse(responseMode, messageIndex);
+      scrollChatToBottom();
+      return;
+    }
+
+    const history = chatMessages
+      .slice(0, messageIndex)
+      .filter((m) => m.user && m.bot && !m.pending)
+      .flatMap((m) => [
+        { role: "user", content: m.user },
+        { role: "assistant", content: m.bot },
+      ]);
+
+    const messages = [
+      { role: "system", content: getBrowserSystemPrompt(responseMode) },
+      ...history,
+      { role: "user", content: userMessage },
+    ];
+
+    let accumulated = "";
+    chatMessages[messageIndex].bot = "";
+    chatMessages[messageIndex].status = "";
+
+    const streamer = new BrowserTextStreamer(browserPipe.tokenizer, {
+      skip_prompt: true,
+      skip_special_tokens: true,
+      callback_function: (token) => {
+        accumulated += token;
+        chatMessages[messageIndex].bot = accumulated;
+        const el = document.getElementById(`bot-bubble-${messageIndex}`);
+        if (el) {
+          el.className = "bubble bubble-bot";
+          el.textContent = accumulated;
+          const msgs = document.getElementById("chat-msgs-guidance");
+          if (msgs) msgs.scrollTop = msgs.scrollHeight;
+        }
+      },
+    });
+
+    try {
+      await browserPipe(messages, {
+        max_new_tokens: 1024,
+        do_sample: true,
+        temperature: 0.75,
+        top_p: 0.92,
+        streamer,
+        return_full_text: false,
+      });
+      chatMessages[messageIndex].pending = false;
+      chatMessages[messageIndex].status = "";
+      usingAI = true;
+      if (!accumulated) throw new Error("Empty browser AI response");
+      render();
+      scrollChatToBottom();
+    } catch (err) {
+      console.warn("Browser AI generation failed:", err);
+      useMockResponse(responseMode, messageIndex);
+      scrollChatToBottom();
+    }
     return;
   }
 
