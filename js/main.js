@@ -13,6 +13,7 @@ let aiCheckDone = false;
 
 const REPORT_STORAGE_KEY = "eqnavigator_reports";
 const AI_PROXY_URL = "http://localhost:3001";
+const IS_LOCAL = ["localhost", "127.0.0.1"].includes(window.location.hostname);
 
 /**
  * Main render function - updates DOM based on current screen state
@@ -121,7 +122,10 @@ function renderModelStatus() {
     return `<div class="ai-status">Support Agent Ready (Local)</div>`;
   }
   if (aiCheckDone) {
-    return `<div class="ai-status ai-status-warn">Support Agent offline. Using fallback responses. Run: npm start</div>`;
+    const msg = IS_LOCAL
+      ? "Support Agent offline. Using fallback responses. Run: npm start"
+      : "Using built-in responses.";
+    return `<div class="ai-status ai-status-warn">${msg}</div>`;
   }
   return `<div class="ai-loading">Connecting to Support Agent...</div>`;
 }
@@ -583,6 +587,12 @@ function scrollChatToBottom(delay = 0) {
  * Check if the local AI proxy is up and the model is ready.
  */
 async function initializeModel() {
+  if (!IS_LOCAL) {
+    aiReady = false;
+    aiCheckDone = true;
+    render();
+    return;
+  }
   try {
     const res = await fetch(`${AI_PROXY_URL}/health`);
     const data = await res.json();
@@ -600,6 +610,12 @@ async function initializeModel() {
  */
 async function queryOllama(userMessage, messageIndex, responseMode = chatMode) {
   if (!chatMessages[messageIndex]) return;
+
+  if (!IS_LOCAL) {
+    useMockResponse(responseMode, messageIndex);
+    scrollChatToBottom();
+    return;
+  }
 
   try {
     const history = chatMessages
