@@ -259,16 +259,10 @@ function renderChatGuidance() {
     chatMode === "identify" ? "Identify discrimination" : "What should I do?";
   const placeholder =
     chatMode === "identify" ? "What happened?" : "Describe your situation...";
-  const intro =
-    chatMode === "identify"
-      ? "Tell me what happened and I'll help you understand if it may be discrimination and what category it falls under."
-      : "Describe your situation and I'll guide you through your options and next steps.";
-  const initialMsg = `<div class="bubble bubble-bot">${intro}</div>`;
-
   const messagesHtml = chatMessages
     .map(
       (msg, i) => `
-    <div class="bubble bubble-user">${escapeHtml(msg.user)}</div>
+    ${msg.user ? `<div class="bubble bubble-user">${escapeHtml(msg.user)}</div>` : ""}
     ${renderBotMessage(msg, i)}`,
     )
     .join("");
@@ -281,7 +275,6 @@ function renderChatGuidance() {
     </div>
 
     <div class="chat-messages" id="chat-msgs-guidance">
-      ${initialMsg}
       ${messagesHtml}
     </div>
     <div class="chat-input-row">
@@ -389,7 +382,7 @@ function renderBottomNav(app) {
     btn.className = "nav-item" + (currentScreen === n.id ? " on" : "");
     btn.innerHTML = `<span class="nav-icon">${n.icon}</span>${n.label}`;
     btn.onclick = () =>
-      n.id === "chat-guidance" ? openChat(chatMode || "steps") : go(n.id);
+      n.id === "chat-guidance" ? openChat(chatMode || "steps", false) : go(n.id);
     nav.appendChild(btn);
   });
 
@@ -418,9 +411,18 @@ function go(screen) {
 /**
  * Open the shared guidance chat with mode-specific behavior
  */
-function openChat(mode) {
+function openChat(mode, pushIntro = true) {
   chatMode = mode === "identify" ? "identify" : "steps";
   currentScreen = "chat-guidance";
+
+  if (pushIntro) {
+    const intro =
+      chatMode === "identify"
+        ? "Tell me what happened and I'll help you understand if it may be discrimination and what category it falls under."
+        : "Describe your situation and I'll guide you through your options and next steps.";
+    chatMessages.push({ user: "", bot: intro, pending: false, status: "" });
+  }
+
   render();
   scrollChatToBottom();
 }
