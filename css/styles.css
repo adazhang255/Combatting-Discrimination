@@ -84,50 +84,65 @@ body {
   align-items: center;
   justify-content: center;
   padding: 32px 24px;
+  gap: 0;
 }
 
-.logo-text {
-  font-family: Georgia, serif;
-  font-size: 28px;
-  font-weight: 700;
-  color: #1e2235;
+.splash-brand {
   text-align: center;
-  line-height: 1.1;
-  letter-spacing: 0.01em;
+  margin-bottom: 4px;
 }
 
-.logo-text span {
-  color: #c85a6a;
+.equity-word {
+  font-family: Georgia, serif;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  line-height: 1;
+  margin-bottom: 0;
+}
+
+.eq-dark   { color: #1e2235; }
+.eq-rose   { color: #c85a6a; }
+.eq-salmon { color: #d4735a; }
+
+.navigator-word {
+  font-family: Georgia, serif;
+  font-size: 38px;
+  font-weight: 900;
+  color: #1e2235;
+  letter-spacing: -0.01em;
+  line-height: 1.05;
 }
 
 .logo-icon {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin: 24px 0;
+  gap: 10px;
+  margin: 28px 0 24px;
 }
 
 .arc {
-  width: 32px;
-  height: 32px;
-  border: 3.5px solid #c85a6a;
-  border-right-color: transparent;
+  width: 36px;
+  height: 36px;
+  border: 4px solid #c85a6a;
   border-radius: 50%;
-  transform: rotate(-45deg);
 }
 
+.arc-left  { border-right-color: transparent; }
+.arc-right { border-left-color: transparent; }
+
 .dot {
-  width: 12px;
-  height: 12px;
+  width: 13px;
+  height: 13px;
   background: #1e2235;
   border-radius: 50%;
 }
 
 .tagline {
   font-size: 14px;
-  font-weight: 600;
-  color: #c85a6a;
-  letter-spacing: 0.06em;
+  font-weight: 700;
+  color: #2a4d8a;
+  letter-spacing: 0.04em;
 }
 
 .splash-btn {
@@ -828,3 +843,298 @@ body {
   font-size: 13px;
   margin-bottom: 12px;
 }
+
+/* ===== RESPONSIVE DESIGN ===== */
+
+/* Very small devices (< 320px) */
+@media (max-width: 319px) {
+  body {
+    padding: 12px 8px;
+  }
+
+  .frame {
+    max-width: 280px;
+    width: 85%;
+    height: calc(100vh - 20px);
+    max-height: 500px;
+    aspect-ratio: 9 / 20;
+    border-radius: 28px;
+    padding: 8px;
+  }
+
+  .screen-wrap {
+    border-radius: 24px;
+  }
+
+  .logo-text,
+  .home-logo {
+    font-size: 20px;
+  }
+
+  .main-btn,
+  .grid-btn {
+    font-size: 12px;
+    padding: 12px 8px;
+  }
+
+  .bubble {
+    max-width: 85%;
+    font-size: 12px;
+    padding: 8px 10px;
+  }
+
+  .chat-tf {
+    font-size: 12px;
+    padding: 8px 12px;
+    min-height: 32px;
+  }
+}
+
+/* Small devices (320px - 375px) */
+@media (max-width: 375px) {
+  body {
+    padding: 16px 12px;
+  }
+
+  .frame {
+    max-width: 300px;
+    width: 90%;
+    height: calc(100vh - 32px);
+    max-height: 540px;
+    aspect-ratio: 9 / 20;
+    border-radius: 32px;
+    padding: 9px;
+  }
+
+  .screen-wrap {
+    border-radius: 28px;
+  }
+
+  .dark-hdr {
+    padding: 14px 16px 12px;
+  }
+
+  .splash {
+    padding: 24px 16px;
+  }
+
+  .home-inner,
+  .report-inner {
+    padding: 16px 14px;
+  }
+
+  .bubble {
+    max-width: 82%;
+  }
+}
+
+/* Medium devices (376px - 480px) - default mobile */
+@media (min-width: 376px) and (max-width: 480px) {
+  body {
+    padding: 18px 14px;
+  }
+
+  .frame {
+    max-width: 340px;
+    width: 100%;
+    height: calc(100vh - 36px);
+    max-height: 620px;
+    aspect-ratio: 9 / 20;
+    border-radius: 36px;
+    padding: 9px;
+  }
+
+  .screen-wrap {
+    border-radius: 30px;
+  }
+}
+
+/* Tablets and larger (481px+) - landscape or larger screens */
+@media (min-width: 481px) {
+  body {
+    padding: 32px 24px;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .frame {
+    max-width: 380px;
+    width: 100%;
+    max-width: calc(100vw - 48px);
+    height: calc(100vh - 64px);
+    max-height: 680px;
+    aspect-ratio: 9 / 20;
+    border-radius: 48px;
+    padding: 10px;
+  }
+
+  .screen-wrap {
+    border-radius: 40px;
+  }
+
+  .notch {
+    width: 80px;
+  }
+
+  .dark-hdr {
+    padding: 18px 20px 16px;
+    font-size: 17px;
+  }
+
+  .splash {
+    padding: 40px 28px;
+  }
+
+  .logo-text {
+    font-size: 32px;
+  }
+
+  .splash-btn {
+    font-size: 16px;
+    padding: 16px 44px;
+  }
+
+  .home-logo {
+    font-size: 28px;
+    margin-bottom: 26px;
+  }
+
+  .main-btn,
+  .ai-status,
+  .ai-loading,
+  .setup-ai-btn {
+    font-size: 15px;
+    padding: 16px 20px;
+  }
+
+  .grid2 {
+    gap: 14px;
+  }
+
+  .grid-btn {
+    font-size: 14px;
+    padding: 20px 12px;
+  }
+
+  .bubble {
+    max-width: 75%;
+    font-size: 14px;
+    padding: 11px 14px;
+  }
+
+  .chat-tf {
+    font-size: 14px;
+    padding: 10px 16px;
+    min-height: 40px;
+    max-height: 140px;
+  }
+
+  .send-btn {
+    width: 38px;
+    height: 38px;
+  }
+
+  .report-select,
+  .report-textarea {
+    font-size: 14px;
+    padding: 11px 14px;
+  }
+
+  .report-textarea {
+    height: 100px;
+  }
+}
+
+/* Large tablets / desktops (769px+) */
+@media (min-width: 769px) {
+  body {
+    padding: 48px 32px;
+  }
+
+  .frame {
+    max-width: 420px;
+    width: 100%;
+    height: calc(100vh - 96px);
+    max-height: 750px;
+    aspect-ratio: 9 / 20;
+    border-radius: 52px;
+  }
+
+  .logo-text,
+  .home-logo {
+    font-size: 30px;
+  }
+
+  .dark-hdr {
+    padding: 20px 22px 18px;
+    font-size: 18px;
+  }
+}
+
+/* Ultra-wide screens (1200px+) */
+@media (min-width: 1200px) {
+  body {
+    padding: 60px 40px;
+  }
+
+  .frame {
+    max-width: 440px;
+    width: 100%;
+    height: calc(100vh - 120px);
+    max-height: 850px;
+    aspect-ratio: 9 / 20;
+    border-radius: 56px;
+  }
+}
+
+/* Landscape mode adjustments */
+@media (max-height: 600px) {
+  .frame {
+    height: calc(100vh - 32px);
+    max-height: none;
+    max-width: 50vh;
+    aspect-ratio: 9 / 20;
+  }
+
+  .logo-text {
+    font-size: 20px;
+  }
+
+  .splash {
+    padding: 16px 20px;
+    gap: 12px;
+  }
+
+  .splash-btn {
+    margin-top: 16px;
+    padding: 12px 32px;
+    font-size: 14px;
+  }
+
+  .home-inner {
+    padding: 12px 14px;
+  }
+
+  .home-logo {
+    font-size: 18px;
+    margin-bottom: 12px;
+  }
+
+  .grid2 {
+    gap: 10px;
+  }
+
+  .grid-btn {
+    font-size: 12px;
+    padding: 14px 8px;
+  }
+
+  .main-btn {
+    font-size: 13px;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+  }
+}
+

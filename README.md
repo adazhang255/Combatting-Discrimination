@@ -4,7 +4,7 @@ A comprehensive web application to help people understand, document, and report 
 
 ## Features
 
-### 1. **Anonymous Incident Reporting** 📋
+### 1. **Anonymous Incident Reporting**
 - Completely anonymous reporting form with no identifiers recorded
 - Discrimination-focused questions specific to different incident types
 - Categories including: Race/Color, Gender, Religion, Age, Disability, National Origin, Sexual Orientation, Pregnancy, etc.
@@ -12,91 +12,81 @@ A comprehensive web application to help people understand, document, and report 
 - Timeline options to help victims remember incident dates
 - Optional witness and evidence documentation
 
-### 2. **AI-Powered Chatbot** 🤖
-- Two guidance chatbots powered by **Gemma 2B** running directly in your browser
-  - **"What should I do?"** - Get immediate guidance on next steps and options
+### 2. **AI-Powered Chatbot**
+- Two guidance modes powered by **Llama 3.2** running locally via Ollama
+  - **"What should I do?"** - Get 3 actionable next steps for your situation
   - **"Identify an experience"** - Help understanding if an experience constitutes discrimination
-- **Zero configuration** - No API keys, accounts, or setup required!
-- **Optimized Performance:**
-  - 🚀 **4-bit Quantization** - Model compressed to ~1.5GB (75% smaller)
-  - ⚡ **WebGPU Acceleration** - 10-50x faster on Chrome/Edge
-  - 📊 **Download Progress Tracking** - See real-time % while model loads
-  - 💾 **Smart Caching** - First load ~2 min, subsequent loads ~5 sec
-- Works perfectly on GitHub Pages - no server needed
-- **Private & Free** - All AI processing happens on your computer
-- Graceful fallback to mock responses
-- Intelligent responses trained to provide:
-  - Clear explanations of US discrimination law
-  - Guidance on documenting incidents
-  - Information about reporting channels (HR, EEOC, state agencies)
-  - Support resources and protections against retaliation
+- **Private & Local** - All AI processing happens on your machine, nothing sent to external services
+- Graceful fallback to contextual mock responses if Ollama is unavailable
+- Responses cover:
+  - US discrimination law (workplace, housing, education, public accommodations)
+  - Documenting incidents and preserving evidence
+  - Reporting channels (HR, EEOC, Title IX, HUD, state agencies, legal aid)
+  - Protections against retaliation
 
-### 3. **Interactive Forums** 💬
+### 3. **Interactive Forums**
 - Browse real discussions about discrimination experiences
-- Click on any forum post to see:
-  - Full post content
-  - Community replies and support
-  - User avatars and timestamps
-  - Engagement metrics (comments, likes)
+- Click on any forum post to see full content, community replies, and engagement metrics
 - Topics include: Hate crimes, microaggressions, psychological support, historical context
 
-### 4. **Support Resources** 🆘
+### 4. **Support Resources**
 - Organized help articles:
   - Essentials (what is discrimination, legal rights, evidence documentation)
   - Connect (advocates, support groups, EEOC filing)
   - Good to know (FAQs, retaliation protections, mental health resources)
-- Quick reference for immediate help
 
-### 5. **Navigation** 🗺️
+### 5. **Navigation**
 - Bottom navigation bar for easy access to all features
-- Persistent state management
-- Smooth screen transitions
-- Back buttons for easy navigation
+- Persistent state management and smooth screen transitions
 
 ## Getting Started
 
-### Basic Setup (< 2 minutes)
+### Requirements
 
-1. **Clone/Open the Project**
+- [Ollama](https://ollama.com) installed and running
+- Node.js 16+
+
+### Setup (< 5 minutes)
+
+1. **Clone the project and install dependencies**
    ```bash
    cd Combatting-Discrimination
+   npm install
    ```
 
-2. **Open in Browser**
-   - Simply open `index.html` in any modern web browser
-   - Chatbot AI loads automatically in the background (first time ~2 minutes)
-   - Everything works with zero configuration!
+2. **Pull the AI model**
+   ```bash
+   ollama pull llama3.2
+   ```
 
-### Zero Configuration Needed
+3. **Start the proxy server**
+   ```bash
+   npm start
+   ```
 
-✅ No API keys  
-✅ No account setup  
-✅ No server needed  
-✅ Just open and use!
+4. **Open the app**
+   - Go to `http://localhost:3001` in your browser
+   - The chatbot is ready immediately — no model download wait
 
-**For Technical Details:**
-- See [OPTIMIZED_AI.md](OPTIMIZED_AI.md) for WebGPU, 4-bit quantization, and performance details
-- See [BROWSER_AI.md](BROWSER_AI.md) for general browser-based AI information
+### Without Ollama
+
+You can still open `index.html` directly in a browser. The chatbot will automatically fall back to contextual mock responses when the proxy server is not running.
 
 ## Project Structure
 
 ```
 Combatting-Discrimination/
-├── index.html                    # Main HTML (loads coi-serviceworker.js)
-├── coi-serviceworker.js          # Cross-Origin Isolation for WebGPU/SharedArrayBuffer
+├── index.html           # Main HTML
 ├── css/
-│   └── styles.css               # All styling (responsive mobile design)
+│   └── styles.css       # All styling (responsive mobile design)
 ├── js/
-│   ├── main.js                  # App logic + optimized AI model initialization
-│   └── data.js                  # App data, prompts, forum posts, report steps
-├── OPTIMIZED_AI.md              # 📚 NEW: WebGPU + 4-bit quantization guide
-├── BROWSER_AI.md                # Browser-based AI fundamentals
-├── README.md                    # This file
-```
-├── ollama-proxy.js          # Optional CORS proxy server
-├── package.json             # Node.js dependencies
+│   ├── main.js          # App logic and AI integration
+│   └── data.js          # Forum posts, report steps, system prompts
+├── ollama-proxy.js      # Express server — CORS proxy between app and Ollama
+├── package.json         # Node.js dependencies
+├── coi-serviceworker.js # Cross-origin isolation header (legacy)
 └── archive/
-    └── app.html             # Legacy version
+    └── app.html         # Legacy version
 ```
 
 ## How It Works
@@ -110,72 +100,62 @@ Combatting-Discrimination/
 
 ### Chat Flow
 1. User clicks "What should I do?" or "Identify an experience"
-2. Enter question about their situation
-3. If Ollama available → Get AI response from Gemma
-4. If Ollama unavailable → Get contextual mock response
+2. App checks `http://localhost:3001/health` for Ollama availability
+3. If available → message sent to proxy → proxy calls Ollama → response returned
+4. If unavailable → contextual mock response shown
 5. Continue conversation with follow-up questions
 
 ### Forum Flow
 1. User clicks "Forums"
 2. Sees list of community discussions
 3. Click on any post to see full discussion with replies
-4. Back button returns to forum list
 
 ## Technologies Used
 
 - **Frontend**: HTML5, CSS3, Vanilla JavaScript
-- **AI Backend**: Transformers.js v3 + Gemma 2B (ONNX, 4-bit quantized)
-- **GPU Acceleration**: WebGPU (with WASM fallback)
-- **Model Format**: ONNX Runtime (onnx-community/gemma-2b-it-v4-proxy-onnx)
-- **Optimization**: 4-bit quantization, cross-origin isolation, progress tracking
+- **AI**: Llama 3.2 via [Ollama](https://ollama.com)
+- **Proxy Server**: Node.js + Express (handles CORS, routes chat requests)
 - **Styling**: CSS3 with mobile-first responsive design
-- **Storage**: Browser IndexedDB for model caching
-- **Deployment**: Static GitHub Pages (no server needed)
+- **Storage**: Browser localStorage for report data
 
 ## Configuration
 
-### Enable AI Chatbot
+### Change the AI Model
 
-Set your Hugging Face token (see [HF_SETUP.md](HF_SETUP.md)):
+Edit `ollama-proxy.js`, line 8:
 ```javascript
-// In browser console:
-localStorage.setItem('hf_token', 'hf_YOUR_TOKEN_HERE');
-### Customize AI Model
-
-In `js/main.js`, the `initializeModel()` function uses:
-```javascript
-const modelName = 'onnx-community/gemma-2b-it-v4-proxy-onnx';
+const MODEL = 'llama3.2';  // change to any model you have pulled
 ```
 
-
-### Adjust Quantization
-
-In `js/main.js`, the `initializeModel()` function uses:
-```javascript
-dtype: 'q4'  // 4-bit quantization (smallest, slower)
-
-// Options:
-dtype: 'q8'  // 8-bit (medium size/speed)
-dtype: 'fp16' // 16-bit (larger, faster, needs more RAM)
+Then pull the model:
+```bash
+ollama pull <model-name>
 ```
 
-### Customize System Prompt
-In `js/data.js`, modify `LLM_SYSTEM_PROMPT` to change how the AI responds.
+### Customize the System Prompt
+
+In `js/data.js`, modify `LLM_SYSTEM_PROMPT`, or edit the `getSystemPrompt()` function in `ollama-proxy.js` directly.
+
+### Change the Proxy Port
+
+Edit `ollama-proxy.js`, line 7:
+```javascript
+const PORT = 3001;
+```
+
+And update `AI_PROXY_URL` in `js/main.js` to match.
 
 ## Data & Privacy
 
-- **No Server** - App runs entirely in your browser
+- **No External AI** - All AI calls go to your local Ollama instance
 - **No Tracking** - No analytics or cookies
-- **No API Keys** - All processing local (no external AI service calls)
-- **Model Caching** - Model downloads once, then cached locally in browser
-- **Anonymous Reporting** - Reports contain no identifiers
-- **Offline Capable** - Works without internet once model is cached
-- **Completely Private** - Nothing leaves your device except model weights from Hugging Face CDN
+- **Anonymous Reporting** - Reports contain no identifiers and are stored only in browser localStorage
+- **Offline Capable** - Mock responses work without internet; full AI works without internet once the model is pulled
 
 ## Customization
 
 ### Add Forum Posts
-Edit `js/data.js` - `FORUM_POSTS` array:
+Edit `js/data.js` — `FORUM_POSTS` array:
 ```javascript
 {
   id: 4,
@@ -193,22 +173,23 @@ Edit `js/data.js` - `FORUM_POSTS` array:
 ```
 
 ### Modify Report Questions
-Edit `js/data.js` - `REPORT_STEPS` array to add/remove questions or change types.
+Edit `js/data.js` — `REPORT_STEPS` array to add/remove questions or change types.
 
 ### Update Styling
-Edit `css/styles.css` - All styles are organized by component.
+Edit `css/styles.css` — all styles are organized by component.
 
 ## Troubleshooting
 
 ### Chatbot gives mock responses?
-- You haven't set your Hugging Face token yet
-- See [HF_SETUP.md](HF_SETUP.md) for setup (takes 2 minutes)
-- Or use in console: `localStorage.setItem('hf_token', 'hf_YOUR_TOKEN')`
+- Make sure Ollama is running: `ollama serve`
+- Make sure the proxy server is running: `npm start`
+- Check health endpoint: `curl http://localhost:3001/health`
+- Make sure llama3.2 is pulled: `ollama list`
 
 ### Chatbot not responding at all?
 - Check browser console for errors (F12)
-- Verify your HF token: `localStorage.getItem('hf_token')`
-- See "[Troubleshooting](HF_SETUP.md#troubleshooting)" in HF_SETUP.md
+- Confirm the proxy is reachable: `http://localhost:3001/health`
+- Confirm Ollama is running on port 11434: `curl http://localhost:11434/api/tags`
 
 ### Forum posts not showing?
 - Check browser console for errors
@@ -216,9 +197,7 @@ Edit `css/styles.css` - All styles are organized by component.
 - Clear browser cache and reload
 
 ### Styling looks broken?
-- Refresh the page
-- Clear CSS cache (Ctrl+Shift+R or Cmd+Shift+R)
-- Check that all CSS files are loaded
+- Refresh the page (Ctrl+Shift+R / Cmd+Shift+R)
 
 ## Browser Support
 
@@ -236,11 +215,10 @@ Edit `css/styles.css` - All styles are organized by component.
 - [ ] Advanced analytics dashboard
 - [ ] Integration with EEOC API
 - [ ] Video tutorials
-- [ ] More AI models support
 
 ## Contributing
 
-This is an open project aimed at supporting discrimination victims. 
+This is an open project aimed at supporting discrimination victims.
 
 Ideas for contribution:
 - Add more forum discussions
@@ -251,15 +229,16 @@ Ideas for contribution:
 
 ## License
 
-MIT License - Feel free to use and modify for good causes.
+MIT License — feel free to use and modify for good causes.
 
 ## Support
 
 For issues or questions:
-1. Check [OLLAMA_SETUP.md](OLLAMA_SETUP.md) for AI-related questions
-2. Review the browser console for error messages
-3. Check that all files are in the correct directories
+1. Check browser console for error messages (F12)
+2. Verify Ollama is running: `ollama serve`
+3. Verify the proxy server is running: `npm start`
+4. Check that all files are in the correct directories
 
 ---
 
-**Built with ❤️ to help combat discrimination**
+**Built with care to help combat discrimination**

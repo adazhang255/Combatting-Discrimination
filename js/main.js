@@ -8,25 +8,11 @@ let chatMessages = [];
 let chatDraft = "";
 let forumPostId = null;
 let usingAI = false;
-let modelReady = false;
-let modelLoadFailed = false;
-let pipeline = null;
-let modelLoadProgress = {
-  lastPercent: -1,
-  lastLogTime: 0,
-};
+let aiReady = false;
+let aiCheckDone = false;
 
 const REPORT_STORAGE_KEY = "eqnavigator_reports";
-
-// Configuration - Transformers.js for browser-side LLM
-const MODEL_ID = "HuggingFaceTB/SmolLM2-135M-Instruct";
-const TRANSFORMERS_JS_URL =
-  "https://cdn.jsdelivr.net/npm/@huggingface/transformers@next";
-const MODEL_DEVICE = "webgpu";
-// Alternative ungated models:
-// gpt-2
-// HuggingFaceTB/SmolLM2-135M-Instruct
-// onnx-community/Qwen3.5-0.8B-ONNX
+const AI_PROXY_URL = "http://localhost:3001";
 
 /**
  * Main render function - updates DOM based on current screen state
@@ -95,11 +81,16 @@ function restoreChatInputState(shouldFocus) {
 function renderSplash(container) {
   container.innerHTML = `
     <div class="splash">
-      <div class="logo-text">E<span>Q</span>UITY<br>NAVIGATOR</div>
+      <div class="splash-brand">
+        <div class="equity-word">
+          <span class="eq-dark">E</span><span class="eq-rose">Q</span><span class="eq-dark">U</span><span class="eq-dark">I</span><span class="eq-dark">T</span><span class="eq-salmon">Y</span>
+        </div>
+        <div class="navigator-word">NAVIGATOR</div>
+      </div>
       <div class="logo-icon">
-        <div class="arc"></div>
+        <div class="arc arc-left"></div>
         <div class="dot"></div>
-        <div class="arc" style="transform:rotate(135deg);"></div>
+        <div class="arc arc-right"></div>
       </div>
       <div class="tagline">Support. Guidance. Action.</div>
       <button class="splash-btn" onclick="go('home')">Get started</button>
@@ -123,22 +114,16 @@ function renderHome() {
 }
 
 /**
- * Render the current browser model status on the home screen.
+ * Render the AI connection status on the chat screen.
  */
 function renderModelStatus() {
-  if (modelReady) {
-    return `<div class="ai-status">AI Ready (Browser)</div>`;
+  if (aiReady) {
+    return `<div class="ai-status">AI Ready (Local)</div>`;
   }
-
-  if (modelLoadFailed) {
-    return `<div class="ai-status ai-status-warn">AI unavailable. Using fallback responses.</div>`;
+  if (aiCheckDone) {
+    return `<div class="ai-status ai-status-warn">AI offline. Using fallback responses. Run: npm start</div>`;
   }
-
-  if (modelLoadProgress.lastPercent >= 0) {
-    return `<div class="ai-loading">Downloading AI (${modelLoadProgress.lastPercent}%)...</div>`;
-  }
-
-  return `<div class="ai-loading">Starting AI model...</div>`;
+  return `<div class="ai-loading">Connecting to AI...</div>`;
 }
 
 /**
@@ -282,9 +267,9 @@ function renderChatGuidance() {
 
   const messagesHtml = chatMessages
     .map(
-      (msg) => `
-    <div class="bubble bubble-user">${msg.user}</div>
-    ${renderBotMessage(msg)}`,
+      (msg, i) => `
+    <div class="bubble bubble-user">${escapeHtml(msg.user)}</div>
+    ${renderBotMessage(msg, i)}`,
     )
     .join("");
 
@@ -325,13 +310,13 @@ function escapeHtml(value) {
 /**
  * Render a normal bot reply or an animated waiting indicator.
  */
-function renderBotMessage(msg) {
+function renderBotMessage(msg, idx) {
   if (!msg.pending) {
-    return `<div class="bubble bubble-bot">${msg.bot}</div>`;
+    return `<div class="bubble bubble-bot" id="bot-bubble-${idx}">${msg.bot}</div>`;
   }
 
   const label = msg.status || "Thinking";
-  return `<div class="bubble bubble-bot bubble-loading" aria-live="polite">
+  return `<div class="bubble bubble-bot bubble-loading" id="bot-bubble-${idx}" aria-live="polite">
     <span>${label}</span>
     <span class="typing-dots" aria-hidden="true">
       <span></span><span></span><span></span>
@@ -533,10 +518,7 @@ function sendChat() {
   // Scroll to bottom after DOM update
   scrollChatToBottom();
 
-  // Let the browser paint the user's message before starting model work.
   queueChatResponse(val, messageIndex, responseMode);
-
-  // Scroll to bottom again after response
   scrollChatToBottom(100);
 }
 
@@ -545,7 +527,7 @@ function sendChat() {
  */
 function queueChatResponse(message, messageIndex, responseMode) {
   requestAnimationFrame(() => {
-    setTimeout(() => queryGemma(message, messageIndex, responseMode), 0);
+    setTimeout(() => queryOllama(message, messageIndex, responseMode), 0);
   });
 }
 
@@ -596,311 +578,97 @@ function scrollChatToBottom(delay = 0) {
 }
 
 /**
- * Check WebGPU support and optimizations
- */
-function detectWebGPU() {
-  if (navigator.gpu) {
-    console.log("✓ WebGPU available");
-    return true;
-  }
-  console.log("WebGPU not available, will use WASM");
-  return false;
-}
-
-/**
- * Initialize the AI model with optimizations: 4-bit quantization, WebGPU, and progress tracking
+ * Check if the local AI proxy is up and the model is ready.
  */
 async function initializeModel() {
-  if (modelReady || pipeline) return;
+  try {
+    const res = await fetch(`${AI_PROXY_URL}/health`);
+    const data = await res.json();
+    aiReady = data.ok === true;
+    if (!aiReady) console.warn("AI proxy:", data.error);
+  } catch {
+    aiReady = false;
+  }
+  aiCheckDone = true;
+  render();
+}
+
+/**
+ * Send a message to the local Ollama proxy and update the chat.
+ */
+async function queryOllama(userMessage, messageIndex, responseMode = chatMode) {
+  if (!chatMessages[messageIndex]) return;
 
   try {
-    // Check for WebGPU support
-    const webgpuAvailable = detectWebGPU();
-    if (!webgpuAvailable) {
-      throw new Error("WebGPU is required for this model.");
-    }
+    const history = chatMessages
+      .slice(0, messageIndex)
+      .filter((m) => m.bot && !m.pending)
+      .flatMap((m) => [
+        { role: "user", content: m.user },
+        { role: "assistant", content: m.bot },
+      ]);
 
-    // Dynamic import of Transformers.js
-    const { pipeline: transformersPipeline } = await import(
-      TRANSFORMERS_JS_URL
-    );
-
-    const modelName = MODEL_ID;
-
-    console.log("Loading browser AI model...");
-    console.log("Model: " + modelName);
-    console.log("Device: " + MODEL_DEVICE);
-    resetModelLoadProgress();
-
-    // Create pipeline for text generation
-    pipeline = await transformersPipeline("text-generation", modelName, {
-      device: MODEL_DEVICE,
-      progress_callback: updateModelLoadProgress,
-    });
-
-    modelReady = true;
-    modelLoadFailed = false;
-    modelLoadProgress.lastPercent = 100;
-    console.log("Download: 100%");
-    updateModelLoadStatus(100);
-    console.log("✓ Model ready! (WebGPU)");
-
-    // Re-render to show ready status
-    if (currentScreen === "home") render();
-  } catch (error) {
-    console.warn("Model initialization failed:", error);
-    console.warn("This is often due to network issues or browser limitations.");
-    console.warn("The app will still work with mock responses as fallback.");
-    modelReady = false;
-    modelLoadFailed = true;
-    pipeline = null;
-  }
-}
-
-/**
- * Reset model load progress before a fresh pipeline load.
- */
-function resetModelLoadProgress() {
-  modelLoadProgress = {
-    lastPercent: -1,
-    lastLogTime: 0,
-  };
-}
-
-/**
- * Track Transformers.js progress similarly to the original callback, with throttled logs.
- */
-function updateModelLoadProgress(progress) {
-  const percent = getModelLoadPercent(progress);
-  if (percent === null) return;
-  const displayPercent = Math.max(modelLoadProgress.lastPercent, percent);
-
-  const now = Date.now();
-  const shouldLog =
-    displayPercent !== modelLoadProgress.lastPercent &&
-    (displayPercent === 100 || now - modelLoadProgress.lastLogTime >= 500);
-
-  modelLoadProgress.lastPercent = displayPercent;
-  updateModelLoadStatus(displayPercent);
-
-  if (shouldLog) {
-    modelLoadProgress.lastLogTime = now;
-    console.log(`Download: ${displayPercent}%`);
-  }
-}
-
-/**
- * Convert the current progress callback into a percentage.
- */
-function getModelLoadPercent(progress) {
-  if (progress.status === "progress") {
-    const loaded = Number(progress.loaded);
-    const total = Number(progress.total);
-
-    if (Number.isFinite(loaded) && Number.isFinite(total) && total > 0) {
-      return Math.round((loaded / total) * 100);
-    }
-
-    const directPercent = Number(progress.progress);
-    return Number.isFinite(directPercent) ? Math.round(directPercent) : null;
-  }
-
-  if (progress.status === "done" || progress.status === "ready") {
-    return 100;
-  }
-
-  return null;
-}
-
-/**
- * Update model download/load status in the UI.
- */
-function updateModelLoadStatus(percent) {
-  if (currentScreen !== "home") return;
-
-  const statusEl = document.getElementById("ai-status");
-  if (!statusEl) return;
-
-  if (percent < 100) {
-    statusEl.innerHTML = `<div class="ai-loading">Loading AI (${percent}%)...</div>`;
-  } else {
-    statusEl.innerHTML = `<div class="ai-status">AI Ready (Browser)</div>`;
-  }
-}
-
-/**
- * Query Gemma model running in browser (no API key needed!)
- */
-async function queryGemma(userMessage, messageIndex, responseMode = chatMode) {
-  try {
-    if (modelLoadFailed) {
-      useMockResponse(responseMode, messageIndex);
-      scrollChatToBottom();
-      return;
-    }
-
-    // Wait for model to be ready (max 5 minutes)
-    let attempts = 0;
-    while (!modelReady && !modelLoadFailed && attempts < 300) {
-      if (!chatMessages[messageIndex]) return;
-      chatMessages[messageIndex].pending = true;
-      chatMessages[messageIndex].status = "Loading AI model";
-      render();
-      // Scroll to bottom while loading
-      scrollChatToBottom();
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      attempts++;
-    }
-
-    if (!modelReady || modelLoadFailed) {
-      console.warn("Model failed to load, using mock response");
-      useMockResponse(responseMode, messageIndex);
-      scrollChatToBottom();
-      return;
-    }
-
-    // Show thinking state
-    if (!chatMessages[messageIndex]) return;
-    chatMessages[messageIndex].pending = true;
-    chatMessages[messageIndex].status = "Generating response";
-    render();
-    // Scroll to bottom
-    scrollChatToBottom();
-
-    // Build the prompt
-    const systemContext = getChatSystemPrompt(responseMode);
-    const fullPrompt = `${systemContext}\n\nUser: ${userMessage}\n\nAssistant:`;
-
-    // Generate response (this runs entirely in the browser!)
-    const result = await pipeline(fullPrompt, {
-      max_new_tokens: 150,
-      temperature: 0.7,
-      top_p: 0.9,
-      repetition_penalty: 1.2,
-    });
-
-    // Text-generation pipelines return { generated_text: "prompt + generated" }
-    let botReply = Array.isArray(result)
-      ? result[0]?.generated_text
-      : result?.generated_text || "";
-
-    // Remove the input prompt to get just the assistant's response
-    if (botReply.startsWith(fullPrompt)) {
-      botReply = botReply.substring(fullPrompt.length).trim();
-    }
-
-    // Further cleanup
-    botReply = botReply.replace(/^["']|["']$/g, "").trim();
-
-    if (!botReply) {
-      botReply = "I apologize, I could not generate a response.";
-    }
-
-    // Update message with generated response
-    if (!chatMessages[messageIndex]) return;
-    chatMessages[messageIndex].bot = botReply;
-    chatMessages[messageIndex].pending = false;
-    chatMessages[messageIndex].status = "";
-    usingAI = true;
-    render();
-    // Scroll to bottom with new response
-    scrollChatToBottom();
-  } catch (error) {
-    console.warn("Generation error:", error);
-    useMockResponse(responseMode, messageIndex);
-    scrollChatToBottom();
-  }
-}
-
-/**
- * Build mode-specific instructions for the AI while allowing the conversation to adapt.
- */
-function getChatSystemPrompt(mode) {
-  const sharedInstructions = `You are a supportive educational assistant for discrimination, workplace rights, school rights, housing, public accommodations, and related reporting options.
-Start with: "I am an AI, not an attorney. This is educational information and not legal advice."
-Be empathetic, ask clarifying questions when facts are missing, and prioritize the user's safety and well-being.
-If the user changes the subject or asks for a different kind of help, adapt your guidance regardless of the initial button clicked.`;
-
-  if (mode === "identify") {
-    return `${sharedInstructions}
-Prioritize identifying whether the described conduct may involve discrimination, harassment, retaliation, or another concern.
-Classify the likely category when possible, such as race/color, religion, sex, gender identity, sexual orientation, pregnancy, national origin, age, disability, genetic information, housing, education, public accommodations, or retaliation.
-Explain uncertainty clearly and name the facts that would matter.`;
-  }
-
-  return `${sharedInstructions}
-Prioritize giving 3 actionable next steps.
-Focus on practical actions such as documenting dates and witnesses, preserving messages or records, checking internal reporting options, contacting a trusted advocate, and considering external agencies such as the EEOC, a state civil rights agency, school Title IX office, housing authority, or local legal aid when relevant.`;
-}
-
-/**
- * Query Hugging Face Gemma API for a response
- */
-async function queryHuggingFace(
-  userMessage,
-  messageIndex = chatMessages.length - 1,
-  responseMode = chatMode,
-) {
-  const hfToken = getHFToken();
-
-  // If no token, use mock responses
-  if (!hfToken) {
-    useMockResponse(responseMode, messageIndex);
-    return;
-  }
-
-  try {
-    // Build the prompt with context
-    const prompt = `System: ${getChatSystemPrompt(responseMode)}\n\nUser: ${userMessage}\n\nAssistant:`;
-
-    const response = await fetch(HF_API_URL, {
+    const res = await fetch(`${AI_PROXY_URL}/chat`, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${hfToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        inputs: prompt,
-        parameters: {
-          max_new_tokens: 200,
-          temperature: 0.7,
-          top_p: 0.9,
-        },
-      }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: userMessage, mode: responseMode, history }),
     });
 
-    if (!response.ok) {
-      if (response.status === 401) {
-        console.warn("Invalid Hugging Face token");
+    if (!res.ok) throw new Error(`Server error ${res.status}`);
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = "";
+    let accumulated = "";
+    let streamDone = false;
+
+    while (!streamDone) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buf += decoder.decode(value, { stream: true });
+      const lines = buf.split("\n");
+      buf = lines.pop(); // keep any incomplete trailing line for the next chunk
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith("data:")) continue;
+        const payload = trimmed.slice(5).trim();
+
+        if (payload === "[DONE]") { streamDone = true; break; }
+
+        try {
+          const json = JSON.parse(payload);
+          if (json.error) throw new Error(json.error);
+          if (json.token) {
+            accumulated += json.token;
+            chatMessages[messageIndex].bot = accumulated;
+            const el = document.getElementById(`bot-bubble-${messageIndex}`);
+            if (el) {
+              el.className = "bubble bubble-bot";
+              el.textContent = accumulated;
+              const msgs = document.getElementById("chat-msgs-guidance");
+              if (msgs) msgs.scrollTop = msgs.scrollHeight;
+            }
+          }
+        } catch (e) {
+          // skip unparseable lines; re-throw real errors (e.g. model errors)
+          if (e instanceof SyntaxError) continue;
+          throw e;
+        }
       }
-      throw new Error(`HF API error: ${response.statusText}`);
     }
 
-    const data = await response.json();
-
-    // Handle different response formats
-    let botReply;
-    if (Array.isArray(data) && data[0]?.generated_text) {
-      // Extract just the assistant's response (remove the prompt)
-      botReply =
-        data[0].generated_text.split("Assistant:")[1]?.trim() ||
-        "I apologize, I could not generate a response.";
-    } else if (data.generated_text) {
-      botReply = data.generated_text.trim();
-    } else {
-      throw new Error("Unexpected response format");
-    }
-
-    // Update the last message with the actual response
-    if (!chatMessages[messageIndex]) return;
-    chatMessages[messageIndex].bot = botReply;
     chatMessages[messageIndex].pending = false;
     chatMessages[messageIndex].status = "";
     usingAI = true;
+    if (!accumulated) throw new Error("Empty stream response");
     render();
-  } catch (error) {
-    console.warn("HF API error:", error.message);
+    scrollChatToBottom();
+  } catch (err) {
+    console.warn("AI error:", err.message);
     useMockResponse(responseMode, messageIndex);
+    scrollChatToBottom();
   }
 }
 
