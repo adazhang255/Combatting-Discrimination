@@ -118,12 +118,12 @@ function renderHome() {
  */
 function renderModelStatus() {
   if (aiReady) {
-    return `<div class="ai-status">AI Ready (Local)</div>`;
+    return `<div class="ai-status">Support Agent Ready (Local)</div>`;
   }
   if (aiCheckDone) {
-    return `<div class="ai-status ai-status-warn">AI offline. Using fallback responses. Run: npm start</div>`;
+    return `<div class="ai-status ai-status-warn">Support Agent offline. Using fallback responses. Run: npm start</div>`;
   }
-  return `<div class="ai-loading">Connecting to AI...</div>`;
+  return `<div class="ai-loading">Connecting to Support Agent...</div>`;
 }
 
 /**
