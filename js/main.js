@@ -124,7 +124,7 @@ function renderModelStatus() {
   if (aiCheckDone) {
     const msg = IS_LOCAL
       ? "Support Agent offline. Using fallback responses. Run: npm start"
-      : "Using built-in responses.";
+      : "Stable Agent.";
     return `<div class="ai-status ai-status-warn">${msg}</div>`;
   }
   return `<div class="ai-loading">Connecting to Support Agent...</div>`;
